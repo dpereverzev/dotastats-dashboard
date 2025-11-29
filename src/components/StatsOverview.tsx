@@ -2,23 +2,40 @@ import { PlayerStats } from "@/types/match";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { Search, TrendingUp, TrendingDown } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react";
 
 interface StatsOverviewProps {
   playerStats: Map<string, PlayerStats>;
   onPlayerSelect: (playerId: string) => void;
 }
 
+type SortField = 'winRate' | 'wins' | 'losses' | 'mmr';
+type SortDirection = 'asc' | 'desc';
+
 export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortField, setSortField] = useState<SortField>('mmr');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
 
   const sortedPlayers = useMemo(() => {
     return Array.from(playerStats.values())
       .filter(player => 
         player.playerName.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      .sort((a, b) => b.mmr - a.mmr);
-  }, [playerStats, searchQuery]);
+      .sort((a, b) => {
+        const multiplier = sortDirection === 'asc' ? 1 : -1;
+        return (b[sortField] - a[sortField]) * multiplier;
+      });
+  }, [playerStats, searchQuery, sortField, sortDirection]);
 
   return (
     <div className="space-y-6">
@@ -30,6 +47,38 @@ export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProp
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
         />
+      </div>
+
+      <div className="flex gap-2 items-center justify-end text-sm text-muted-foreground">
+        <span>Sort by:</span>
+        <button
+          onClick={() => handleSort('winRate')}
+          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+        >
+          Win Rate
+          {sortField === 'winRate' && <ArrowUpDown className="h-3 w-3" />}
+        </button>
+        <button
+          onClick={() => handleSort('wins')}
+          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+        >
+          Wins
+          {sortField === 'wins' && <ArrowUpDown className="h-3 w-3" />}
+        </button>
+        <button
+          onClick={() => handleSort('losses')}
+          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+        >
+          Losses
+          {sortField === 'losses' && <ArrowUpDown className="h-3 w-3" />}
+        </button>
+        <button
+          onClick={() => handleSort('mmr')}
+          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+        >
+          MMR
+          {sortField === 'mmr' && <ArrowUpDown className="h-3 w-3" />}
+        </button>
       </div>
 
       <div className="grid gap-4">
