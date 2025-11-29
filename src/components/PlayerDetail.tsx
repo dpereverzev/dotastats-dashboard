@@ -41,7 +41,7 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDet
       }))
       .filter(item => item.player)
       .sort((a, b) => {
-        const multiplier = sortDirection === 'asc' ? 1 : -1;
+        const multiplier = sortDirection === 'desc' ? 1 : -1;
         
         if (sortField === 'matches') {
           return (b.stats.matchesWithBoth - a.stats.matchesWithBoth) * multiplier;
