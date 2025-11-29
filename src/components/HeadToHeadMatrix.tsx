@@ -18,7 +18,7 @@ export const HeadToHeadMatrix = ({ playerStats, h2hMatrix }: HeadToHeadMatrixPro
         player.playerName.toLowerCase().includes(searchQuery.toLowerCase())
       )
       .sort((a, b) => b.winRate - a.winRate)
-      .slice(0, 15);
+      .slice(0, 150);
   }, [playerStats, searchQuery]);
 
   const getWinRateColor = (winRate: number, matches: number) => {
@@ -87,7 +87,7 @@ export const HeadToHeadMatrix = ({ playerStats, h2hMatrix }: HeadToHeadMatrixPro
                       <div className={`h-12 rounded flex flex-col items-center justify-center ${getWinRateColor(winRate, totalAgainst)}`}>
                         {totalAgainst > 0 ? (
                           <>
-                            <div className="text-sm font-bold">{winRate.toFixed(0)}%</div>
+                            <div className="text-sm font-bold">{winRate.toFixed(1)}%</div>
                             <div className="text-[10px] opacity-70">
                               {h2h?.player1WinsAgainstPlayer2}-{h2h?.player1LossesAgainstPlayer2}
                             </div>

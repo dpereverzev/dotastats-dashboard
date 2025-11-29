@@ -4,15 +4,15 @@ export const calculatePlayerStats = (matches: Match[]): Map<string, PlayerStats>
   const playerStatsMap = new Map<string, PlayerStats>();
 
   // Filter out cancelled matches
-  const validMatches = matches.filter(match => match.winner !== -1);
+  const validMatches = matches.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota').sort((a, b) => b.game_num - a.game_num);
 
   validMatches.forEach(match => {
     match.teams.forEach((team, teamIndex) => {
       team.forEach(player => {
-        if (!player.picked) return;
+        // if (!player.picked) return;
 
         const won = match.winner === teamIndex;
-        
+
         if (!playerStatsMap.has(player.id)) {
           playerStatsMap.set(player.id, {
             playerId: player.id,
@@ -23,6 +23,7 @@ export const calculatePlayerStats = (matches: Match[]): Map<string, PlayerStats>
             winRate: 0,
             averageMMR: 0,
             mmrChange: 0,
+            mmr: player.mmr
           });
         }
 
@@ -54,14 +55,15 @@ export const calculateHeadToHead = (
 ): HeadToHeadStats => {
   let matchesWithBoth = 0;
   let player1WinsWithPlayer2 = 0;
+  let player1LosesWithPlayer2 = 0;
   let player1WinsAgainstPlayer2 = 0;
   let player1LossesAgainstPlayer2 = 0;
 
   const validMatches = matches.filter(match => match.winner !== -1);
 
   validMatches.forEach(match => {
-    const team0 = match.teams[0].filter(p => p.picked);
-    const team1 = match.teams[1].filter(p => p.picked);
+    const team0 = match.teams[0];
+    const team1 = match.teams[1];
 
     const player1InTeam0 = team0.some(p => p.id === player1Id);
     const player1InTeam1 = team1.some(p => p.id === player1Id);
@@ -80,6 +82,8 @@ export const calculateHeadToHead = (
       const player1Team = player1InTeam0 ? 0 : 1;
       if (match.winner === player1Team) {
         player1WinsWithPlayer2++;
+      } else {
+        player1LosesWithPlayer2++;
       }
     }
     // Opposing teams
@@ -100,9 +104,10 @@ export const calculateHeadToHead = (
     player2Id,
     matchesWithBoth,
     player1WinsWithPlayer2,
+    player1LosesWithPlayer2,
     player1WinsAgainstPlayer2,
     player1LossesAgainstPlayer2,
-    winRateWith: matchesWithBoth > 0 ? (player1WinsWithPlayer2 / matchesWithBoth) * 100 : 0,
+    winRateWith: player1WinsWithPlayer2 + player1LosesWithPlayer2 > 0 ? (player1WinsWithPlayer2 / (player1WinsWithPlayer2 + player1LosesWithPlayer2)) * 100 : 0,
     winRateAgainst: totalAgainstMatches > 0 ? (player1WinsAgainstPlayer2 / totalAgainstMatches) * 100 : 0,
   };
 };

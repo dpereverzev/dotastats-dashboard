@@ -94,16 +94,26 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDet
 
                 <div className="flex items-center gap-4">
                   <div className="text-center min-w-[80px]">
-                    <div className="text-xs text-muted-foreground mb-1">With Teammate</div>
+                    <div className="text-xs text-muted-foreground mb-1">Total matches:</div>
                     <div className="font-semibold text-foreground">
-                      {stats.player1WinsWithPlayer2} wins
+                      {stats.matchesWithBoth}
+                    </div>
+                  </div>
+
+                  <div className="text-center min-w-[100px]">
+                    <div className="text-xs text-muted-foreground mb-1">With Teammate</div>
+                    <div className={`text-lg font-bold ${getWinRateColor(stats.winRateWith)}`}>
+                      {stats.winRateWith.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {stats.player1WinsWithPlayer2}W - {stats.player1LosesWithPlayer2}L
                     </div>
                   </div>
 
                   <div className="text-center min-w-[100px]">
                     <div className="text-xs text-muted-foreground mb-1">VS</div>
                     <div className={`text-lg font-bold ${getWinRateColor(stats.winRateAgainst)}`}>
-                      {stats.winRateAgainst.toFixed(0)}%
+                      {stats.winRateAgainst.toFixed(1)}%
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {stats.player1WinsAgainstPlayer2}W - {stats.player1LossesAgainstPlayer2}L

@@ -31,6 +31,7 @@ export interface PlayerStats {
   winRate: number;
   averageMMR: number;
   mmrChange: number;
+  mmr: number;
 }
 
 export interface HeadToHeadStats {
@@ -38,6 +39,7 @@ export interface HeadToHeadStats {
   player2Id: string;
   matchesWithBoth: number;
   player1WinsWithPlayer2: number;
+  player1LosesWithPlayer2: number;
   player1WinsAgainstPlayer2: number;
   player1LossesAgainstPlayer2: number;
   winRateWith: number;

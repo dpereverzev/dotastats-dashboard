@@ -17,7 +17,7 @@ export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProp
       .filter(player => 
         player.playerName.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      .sort((a, b) => b.winRate - a.winRate);
+      .sort((a, b) => b.mmr - a.mmr);
   }, [playerStats, searchQuery]);
 
   return (
@@ -41,7 +41,7 @@ export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProp
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1">
-                <div className="text-2xl font-bold text-primary w-8">
+                <div className="text-2xl font-bold text-primary w-16">
                   #{index + 1}
                 </div>
                 <div className="flex-1">
@@ -88,13 +88,6 @@ export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProp
                     {player.mmrChange > 0 ? '+' : ''}{player.mmrChange}
                   </div>
                   <div className="text-xs text-muted-foreground">MMR</div>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-foreground">
-                    {Math.round(player.averageMMR)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Avg MMR</div>
                 </div>
               </div>
             </div>

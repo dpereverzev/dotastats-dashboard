@@ -21,7 +21,7 @@ const Index = () => {
   }, [data]);
 
   const totalMatches = useMemo(() => {
-    return data.data.filter(match => match.winner !== -1).length;
+    return data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota').length;
   }, [data]);
 
   const selectedPlayer = selectedPlayerId ? playerStats.get(selectedPlayerId) : null;
@@ -60,18 +60,6 @@ const Index = () => {
                 <p className="text-3xl font-bold text-primary">{playerStats.size}</p>
               </div>
               <Grid3x3 className="h-8 w-8 text-primary/50" />
-            </div>
-          </Card>
-
-          <Card className="p-6 bg-gradient-to-br from-card to-muted border-primary/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Avg Matches/Player</p>
-                <p className="text-3xl font-bold text-primary">
-                  {(totalMatches / playerStats.size * 2).toFixed(0)}
-                </p>
-              </div>
-              <Trophy className="h-8 w-8 text-primary/50" />
             </div>
           </Card>
         </div>
