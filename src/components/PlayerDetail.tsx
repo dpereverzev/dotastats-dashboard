@@ -1,7 +1,8 @@
 import { PlayerStats, HeadToHeadStats } from "@/types/match";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, Swords } from "lucide-react";
+import { ArrowLeft, Users, Swords, ArrowUpDown } from "lucide-react";
+import { useState, useMemo } from "react";
 
 interface PlayerDetailProps {
   player: PlayerStats;
@@ -10,24 +11,47 @@ interface PlayerDetailProps {
   onBack: () => void;
 }
 
+type H2HSortField = 'matches' | 'winRateWith' | 'winRateAgainst';
+type SortDirection = 'asc' | 'desc';
+
 export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDetailProps) => {
+  const [sortField, setSortField] = useState<H2HSortField>('matches');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const handleSort = (field: H2HSortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
   const getWinRateColor = (winRate: number) => {
     if (winRate >= 60) return "text-success";
     if (winRate >= 50) return "text-primary";
     return "text-destructive";
   };
 
-  const sortedH2H = Array.from(h2hStats.entries())
-    .map(([playerId, stats]) => ({
-      player: allPlayers.get(playerId)!,
-      stats,
-    }))
-    .filter(item => item.player)
-    .sort((a, b) => {
-      const totalA = a.stats.player1WinsAgainstPlayer2 + a.stats.player1LossesAgainstPlayer2;
-      const totalB = b.stats.player1WinsAgainstPlayer2 + b.stats.player1LossesAgainstPlayer2;
-      return totalB - totalA;
-    });
+  const sortedH2H = useMemo(() => {
+    return Array.from(h2hStats.entries())
+      .map(([playerId, stats]) => ({
+        player: allPlayers.get(playerId)!,
+        stats,
+      }))
+      .filter(item => item.player)
+      .sort((a, b) => {
+        const multiplier = sortDirection === 'asc' ? 1 : -1;
+        
+        if (sortField === 'matches') {
+          return (b.stats.matchesWithBoth - a.stats.matchesWithBoth) * multiplier;
+        } else if (sortField === 'winRateWith') {
+          return (b.stats.winRateWith - a.stats.winRateWith) * multiplier;
+        } else {
+          return (b.stats.winRateAgainst - a.stats.winRateAgainst) * multiplier;
+        }
+      });
+  }, [h2hStats, allPlayers, sortField, sortDirection]);
 
   return (
     <div className="space-y-6">
@@ -77,6 +101,31 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDet
           <Swords className="h-5 w-5 text-primary" />
           Head-to-Head Performance
         </h3>
+
+        <div className="flex gap-2 items-center justify-end text-sm text-muted-foreground mb-4">
+          <span>Sort by:</span>
+          <button
+            onClick={() => handleSort('matches')}
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          >
+            Total Matches
+            {sortField === 'matches' && <ArrowUpDown className="h-3 w-3" />}
+          </button>
+          <button
+            onClick={() => handleSort('winRateWith')}
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          >
+            Win Rate With
+            {sortField === 'winRateWith' && <ArrowUpDown className="h-3 w-3" />}
+          </button>
+          <button
+            onClick={() => handleSort('winRateAgainst')}
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          >
+            Win Rate VS
+            {sortField === 'winRateAgainst' && <ArrowUpDown className="h-3 w-3" />}
+          </button>
+        </div>
         
         <div className="space-y-2">
           {sortedH2H.map(({ player: opponent, stats }) => {
