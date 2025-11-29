@@ -34,7 +34,7 @@ export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProp
         player.totalMatches >= minGames
       )
       .sort((a, b) => {
-        const multiplier = sortDirection === 'asc' ? 1 : -1;
+        const multiplier = sortDirection === 'desc' ? 1 : -1;
         return (b[sortField] - a[sortField]) * multiplier;
       });
   }, [playerStats, searchQuery, minGames, sortField, sortDirection]);
