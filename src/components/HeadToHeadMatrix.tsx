@@ -11,15 +11,17 @@ interface HeadToHeadMatrixProps {
 
 export const HeadToHeadMatrix = ({ playerStats, h2hMatrix }: HeadToHeadMatrixProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [minGames, setMinGames] = useState<number>(0);
 
   const filteredPlayers = useMemo(() => {
     return Array.from(playerStats.values())
       .filter(player => 
-        player.playerName.toLowerCase().includes(searchQuery.toLowerCase())
+        player.playerName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        player.totalMatches >= minGames
       )
       .sort((a, b) => b.winRate - a.winRate)
       .slice(0, 150);
-  }, [playerStats, searchQuery]);
+  }, [playerStats, searchQuery, minGames]);
 
   const getWinRateColor = (winRate: number, matches: number) => {
     if (matches === 0) return "bg-muted text-muted-foreground";
@@ -30,14 +32,25 @@ export const HeadToHeadMatrix = ({ playerStats, h2hMatrix }: HeadToHeadMatrixPro
 
   return (
     <div className="space-y-6">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search players..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search players..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="w-[200px]">
+          <Input
+            type="number"
+            min="0"
+            placeholder="Min games (0)"
+            value={minGames || ''}
+            onChange={(e) => setMinGames(Math.max(0, parseInt(e.target.value) || 0))}
+          />
+        </div>
       </div>
 
       <Card className="p-6 overflow-x-auto">

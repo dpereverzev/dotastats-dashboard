@@ -14,6 +14,7 @@ type SortDirection = 'asc' | 'desc';
 
 export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [minGames, setMinGames] = useState<number>(0);
   const [sortField, setSortField] = useState<SortField>('mmr');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -29,24 +30,36 @@ export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProp
   const sortedPlayers = useMemo(() => {
     return Array.from(playerStats.values())
       .filter(player => 
-        player.playerName.toLowerCase().includes(searchQuery.toLowerCase())
+        player.playerName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        player.totalMatches >= minGames
       )
       .sort((a, b) => {
         const multiplier = sortDirection === 'asc' ? 1 : -1;
         return (b[sortField] - a[sortField]) * multiplier;
       });
-  }, [playerStats, searchQuery, sortField, sortDirection]);
+  }, [playerStats, searchQuery, minGames, sortField, sortDirection]);
 
   return (
     <div className="space-y-6">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search players..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search players..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="w-[200px]">
+          <Input
+            type="number"
+            min="0"
+            placeholder="Min games (0)"
+            value={minGames || ''}
+            onChange={(e) => setMinGames(Math.max(0, parseInt(e.target.value) || 0))}
+          />
+        </div>
       </div>
 
       <div className="flex gap-2 items-center justify-end text-sm text-muted-foreground">
