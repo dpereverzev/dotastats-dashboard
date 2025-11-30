@@ -8,6 +8,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { calculatePlayerStats, getHeadToHeadMatrix } from "@/utils/statsCalculator";
 import { useMatchData } from "@/hooks/useMatchData";
 import { Trophy, Target, Grid3x3, AlertCircle } from "lucide-react";
+import { endOfDay, startOfDay } from 'date-fns';
 
 const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
@@ -18,7 +19,7 @@ const Index = () => {
 
   const { playerStats, h2hMatrix } = useMemo(() => {
     if (!data) return { playerStats: new Map(), h2hMatrix: new Map() };
-    const stats = calculatePlayerStats(data.data, dateFrom, dateTo);
+    const stats = calculatePlayerStats(data.data, startOfDay(dateFrom), endOfDay(dateTo));
     const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()), dateFrom, dateTo);
     return { playerStats: stats, h2hMatrix: matrix };
   }, [data, dateFrom, dateTo]);

@@ -62,7 +62,7 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDet
 
       <Card className="p-6">
         <h2 className="text-3xl font-bold mb-6 text-foreground">{player.playerName}</h2>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-4 bg-muted rounded-lg">
             <div className="text-3xl font-bold text-primary">{player.winRate.toFixed(1)}%</div>
@@ -144,9 +144,10 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDet
                 <div className="flex items-center gap-4">
                   <div className="text-center min-w-[80px]">
                     <div className="text-xs text-muted-foreground mb-1">Total matches:</div>
-                    <div className="font-semibold text-foreground">
+                    <div className="text-lg font-semibold text-foreground">
                       {stats.matchesWithBoth}
                     </div>
+                    <div className="text-xs font-bold">&emsp;</div>
                   </div>
 
                   <div className="text-center min-w-[100px]">

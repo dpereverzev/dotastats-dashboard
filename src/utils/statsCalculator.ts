@@ -33,7 +33,7 @@ export const calculatePlayerStats = (matches: Match[], dateFrom?: Date, dateTo?:
             losses: 0,
             winRate: 0,
             averageMMR: 0,
-            mmrChange: 0,
+            mmrChange: 1000,
             mmr: player.mmr
           });
         }

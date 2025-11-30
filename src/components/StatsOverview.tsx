@@ -18,7 +18,7 @@ interface StatsOverviewProps {
   onDateToChange: (date: Date | undefined) => void;
 }
 
-type SortField = 'winRate' | 'wins' | 'losses' | 'mmrChange';
+type SortField = 'winRate' | 'wins' | 'losses' | 'mmrChange' | 'totalMatches';
 type SortDirection = 'asc' | 'desc';
 
 export const StatsOverview = ({ 
@@ -80,7 +80,7 @@ export const StatsOverview = ({
           <PopoverTrigger asChild>
             <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateFrom ? format(dateFrom, "PPP") : "Date from"}
+              {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Date from"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -91,7 +91,7 @@ export const StatsOverview = ({
           <PopoverTrigger asChild>
             <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateTo ? format(dateTo, "PPP") : "Date to"}
+              {dateTo ? format(dateTo, "dd/MM/yyyy") : "Date to"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -100,35 +100,42 @@ export const StatsOverview = ({
         </Popover>
       </div>
 
-      <div className="flex gap-2 items-center justify-end text-sm text-muted-foreground">
+      <div className="flex gap-6 items-center justify-end text-sm text-muted-foreground pr-4">
         <span>Sort by:</span>
         <button
+          onClick={() => handleSort('totalMatches')}
+          className="flex justify-center items-center gap-1 py-1 rounded hover:bg-muted transition-colors w-[80px]"
+        >
+          Matches played
+          {sortField === 'totalMatches' && <ArrowUpDown className="h-3 w-3"/>}
+        </button>
+        <button
           onClick={() => handleSort('winRate')}
-          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          className="flex justify-center items-center gap-1 py-1 rounded hover:bg-muted transition-colors w-[80px]"
         >
           Win Rate
-          {sortField === 'winRate' && <ArrowUpDown className="h-3 w-3" />}
+          {sortField === 'winRate' && <ArrowUpDown className="h-3 w-3"/>}
         </button>
         <button
           onClick={() => handleSort('wins')}
-          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          className="flex justify-center items-center gap-1 py-1 rounded hover:bg-muted transition-colors w-[80px]"
         >
           Wins
-          {sortField === 'wins' && <ArrowUpDown className="h-3 w-3" />}
+          {sortField === 'wins' && <ArrowUpDown className="h-3 w-3"/>}
         </button>
         <button
           onClick={() => handleSort('losses')}
-          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          className="flex justify-center items-center gap-1 py-1 rounded hover:bg-muted transition-colors w-[80px]"
         >
           Losses
-          {sortField === 'losses' && <ArrowUpDown className="h-3 w-3" />}
+          {sortField === 'losses' && <ArrowUpDown className="h-3 w-3"/>}
         </button>
         <button
           onClick={() => handleSort('mmrChange')}
-          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          className="flex justify-center items-center gap-1 py-1 rounded hover:bg-muted transition-colors w-[80px]"
         >
           MMR
-          {sortField === 'mmrChange' && <ArrowUpDown className="h-3 w-3" />}
+          {sortField === 'mmrChange' && <ArrowUpDown className="h-3 w-3"/>}
         </button>
       </div>
 
@@ -145,45 +152,49 @@ export const StatsOverview = ({
                   #{index + 1}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg text-foreground truncate max-w-[200px]">
+                  <h3 className="font-semibold text-lg text-foreground truncate max-w-[300px]">
                     {player.playerName}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {player.totalMatches} matches played
-                  </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-6">
-                <div className="text-center">
+                <div className="text-center w-[80px]">
+                  <div className="text-2xl font-bold text-primary">
+                    {player.totalMatches}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Matches played</div>
+                </div>
+
+                <div className="text-center w-[80px]">
                   <div className="text-2xl font-bold text-primary">
                     {player.winRate.toFixed(1)}%
                   </div>
                   <div className="text-xs text-muted-foreground">Win Rate</div>
                 </div>
 
-                <div className="text-center">
+                <div className="text-center w-[80px]">
                   <div className="text-lg font-semibold text-success">
                     {player.wins}W
                   </div>
                   <div className="text-xs text-muted-foreground">Wins</div>
                 </div>
 
-                <div className="text-center">
+                <div className="text-center w-[80px]">
                   <div className="text-lg font-semibold text-destructive">
                     {player.losses}L
                   </div>
                   <div className="text-xs text-muted-foreground">Losses</div>
                 </div>
 
-                <div className="text-center">
+                <div className="text-center w-[80px]">
                   <div className={`text-lg font-semibold flex items-center gap-1 ${
                     player.mmrChange >= 0 ? 'text-success' : 'text-destructive'
                   }`}>
                     {player.mmrChange >= 0 ? (
-                      <TrendingUp className="h-4 w-4" />
+                      <TrendingUp className="h-4 w-4"/>
                     ) : (
-                      <TrendingDown className="h-4 w-4" />
+                      <TrendingDown className="h-4 w-4"/>
                     )}
                     {player.mmrChange > 0 ? '+' : ''}{player.mmrChange}
                   </div>
