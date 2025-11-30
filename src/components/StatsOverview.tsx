@@ -2,17 +2,33 @@ import { PlayerStats } from "@/types/match";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { Search, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, ArrowUpDown, CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface StatsOverviewProps {
   playerStats: Map<string, PlayerStats>;
   onPlayerSelect: (playerId: string) => void;
+  dateFrom?: Date;
+  dateTo?: Date;
+  onDateFromChange: (date: Date | undefined) => void;
+  onDateToChange: (date: Date | undefined) => void;
 }
 
 type SortField = 'winRate' | 'wins' | 'losses' | 'mmr';
 type SortDirection = 'asc' | 'desc';
 
-export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProps) => {
+export const StatsOverview = ({ 
+  playerStats, 
+  onPlayerSelect, 
+  dateFrom, 
+  dateTo, 
+  onDateFromChange, 
+  onDateToChange 
+}: StatsOverviewProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [minGames, setMinGames] = useState<number>(0);
   const [sortField, setSortField] = useState<SortField>('mmr');
@@ -41,8 +57,8 @@ export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProp
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-3">
-        <div className="relative flex-1">
+      <div className="flex gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search players..."
@@ -51,7 +67,7 @@ export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProp
             className="pl-10"
           />
         </div>
-        <div className="w-[200px]">
+        <div className="w-[150px]">
           <Input
             type="number"
             min="0"
@@ -60,6 +76,28 @@ export const StatsOverview = ({ playerStats, onPlayerSelect }: StatsOverviewProp
             onChange={(e) => setMinGames(Math.max(0, parseInt(e.target.value) || 0))}
           />
         </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateFrom ? format(dateFrom, "PPP") : "Date from"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={dateFrom} onSelect={onDateFromChange} initialFocus />
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateTo ? format(dateTo, "PPP") : "Date to"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={dateTo} onSelect={onDateToChange} initialFocus />
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div className="flex gap-2 items-center justify-end text-sm text-muted-foreground">

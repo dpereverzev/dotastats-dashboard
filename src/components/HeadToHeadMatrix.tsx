@@ -2,14 +2,30 @@ import { PlayerStats, HeadToHeadStats } from "@/types/match";
 import { Card } from "@/components/ui/card";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface HeadToHeadMatrixProps {
   playerStats: Map<string, PlayerStats>;
   h2hMatrix: Map<string, Map<string, HeadToHeadStats>>;
+  dateFrom?: Date;
+  dateTo?: Date;
+  onDateFromChange: (date: Date | undefined) => void;
+  onDateToChange: (date: Date | undefined) => void;
 }
 
-export const HeadToHeadMatrix = ({ playerStats, h2hMatrix }: HeadToHeadMatrixProps) => {
+export const HeadToHeadMatrix = ({ 
+  playerStats, 
+  h2hMatrix, 
+  dateFrom, 
+  dateTo, 
+  onDateFromChange, 
+  onDateToChange 
+}: HeadToHeadMatrixProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [minGames, setMinGames] = useState<number>(0);
 
@@ -32,8 +48,8 @@ export const HeadToHeadMatrix = ({ playerStats, h2hMatrix }: HeadToHeadMatrixPro
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-3">
-        <div className="relative flex-1">
+      <div className="flex gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search players..."
@@ -42,7 +58,7 @@ export const HeadToHeadMatrix = ({ playerStats, h2hMatrix }: HeadToHeadMatrixPro
             className="pl-10"
           />
         </div>
-        <div className="w-[200px]">
+        <div className="w-[150px]">
           <Input
             type="number"
             min="0"
@@ -51,6 +67,28 @@ export const HeadToHeadMatrix = ({ playerStats, h2hMatrix }: HeadToHeadMatrixPro
             onChange={(e) => setMinGames(Math.max(0, parseInt(e.target.value) || 0))}
           />
         </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateFrom ? format(dateFrom, "PPP") : "Date from"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={dateFrom} onSelect={onDateFromChange} initialFocus />
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateTo ? format(dateTo, "PPP") : "Date to"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={dateTo} onSelect={onDateToChange} initialFocus />
+          </PopoverContent>
+        </Popover>
       </div>
 
       <Card className="p-6 overflow-x-auto">
