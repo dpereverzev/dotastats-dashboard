@@ -4,17 +4,37 @@ import { Card } from "@/components/ui/card";
 import { StatsOverview } from "@/components/StatsOverview";
 import { HeadToHeadMatrix } from "@/components/HeadToHeadMatrix";
 import { PlayerDetail } from "@/components/PlayerDetail";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { calculatePlayerStats, getHeadToHeadMatrix } from "@/utils/statsCalculator";
-import { MatchData } from "@/types/match";
-import matchData from "@/data/all-stats.json";
-import { Trophy, Target, Grid3x3 } from "lucide-react";
+import { useMatchData } from "@/hooks/useMatchData";
+import { Trophy, Target, Grid3x3, AlertCircle } from "lucide-react";
 
 const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   
-  const data = matchData as MatchData;
+  const { data, loading, error } = useMatchData();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="p-8 max-w-md">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive" />
+            <h2 className="text-2xl font-bold text-foreground">Failed to Load Data</h2>
+            <p className="text-muted-foreground">
+              {error || "Could not fetch match data from the API. Please try again later."}
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   const { playerStats, h2hMatrix } = useMemo(() => {
     const stats = calculatePlayerStats(data.data, dateFrom, dateTo);
