@@ -11,18 +11,29 @@ import { Trophy, Target, Grid3x3 } from "lucide-react";
 
 const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   
   const data = matchData as MatchData;
 
   const { playerStats, h2hMatrix } = useMemo(() => {
-    const stats = calculatePlayerStats(data.data);
-    const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()));
+    const stats = calculatePlayerStats(data.data, dateFrom, dateTo);
+    const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()), dateFrom, dateTo);
     return { playerStats: stats, h2hMatrix: matrix };
-  }, [data]);
+  }, [data, dateFrom, dateTo]);
 
   const totalMatches = useMemo(() => {
-    return data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota').length;
-  }, [data]);
+    let matches = data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota');
+    if (dateFrom || dateTo) {
+      matches = matches.filter(match => {
+        const matchDate = new Date(match.time);
+        if (dateFrom && matchDate < dateFrom) return false;
+        if (dateTo && matchDate > dateTo) return false;
+        return true;
+      });
+    }
+    return matches.length;
+  }, [data, dateFrom, dateTo]);
 
   const selectedPlayer = selectedPlayerId ? playerStats.get(selectedPlayerId) : null;
   const selectedH2H = selectedPlayerId ? h2hMatrix.get(selectedPlayerId) : null;
@@ -83,6 +94,10 @@ const Index = () => {
               <StatsOverview 
                 playerStats={playerStats}
                 onPlayerSelect={setSelectedPlayerId}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateFromChange={setDateFrom}
+                onDateToChange={setDateTo}
               />
             </TabsContent>
 
@@ -90,6 +105,10 @@ const Index = () => {
               <HeadToHeadMatrix 
                 playerStats={playerStats}
                 h2hMatrix={h2hMatrix}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateFromChange={setDateFrom}
+                onDateToChange={setDateTo}
               />
             </TabsContent>
           </Tabs>

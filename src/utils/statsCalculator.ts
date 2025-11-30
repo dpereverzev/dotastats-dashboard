@@ -1,10 +1,21 @@
 import { Match, PlayerStats, HeadToHeadStats } from "@/types/match";
 
-export const calculatePlayerStats = (matches: Match[]): Map<string, PlayerStats> => {
+export const calculatePlayerStats = (matches: Match[], dateFrom?: Date, dateTo?: Date): Map<string, PlayerStats> => {
   const playerStatsMap = new Map<string, PlayerStats>();
 
-  // Filter out cancelled matches
-  const validMatches = matches.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota').sort((a, b) => b.game_num - a.game_num);
+  // Filter out cancelled matches and apply date filter
+  let validMatches = matches.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota');
+  
+  if (dateFrom || dateTo) {
+    validMatches = validMatches.filter(match => {
+      const matchDate = new Date(match.time);
+      if (dateFrom && matchDate < dateFrom) return false;
+      if (dateTo && matchDate > dateTo) return false;
+      return true;
+    });
+  }
+  
+  validMatches = validMatches.sort((a, b) => b.game_num - a.game_num);
 
   validMatches.forEach(match => {
     match.teams.forEach((team, teamIndex) => {
@@ -51,7 +62,9 @@ export const calculatePlayerStats = (matches: Match[]): Map<string, PlayerStats>
 export const calculateHeadToHead = (
   matches: Match[],
   player1Id: string,
-  player2Id: string
+  player2Id: string,
+  dateFrom?: Date,
+  dateTo?: Date
 ): HeadToHeadStats => {
   let matchesWithBoth = 0;
   let player1WinsWithPlayer2 = 0;
@@ -59,7 +72,16 @@ export const calculateHeadToHead = (
   let player1WinsAgainstPlayer2 = 0;
   let player1LossesAgainstPlayer2 = 0;
 
-  const validMatches = matches.filter(match => match.winner !== -1);
+  let validMatches = matches.filter(match => match.winner !== -1);
+  
+  if (dateFrom || dateTo) {
+    validMatches = validMatches.filter(match => {
+      const matchDate = new Date(match.time);
+      if (dateFrom && matchDate < dateFrom) return false;
+      if (dateTo && matchDate > dateTo) return false;
+      return true;
+    });
+  }
 
   validMatches.forEach(match => {
     const team0 = match.teams[0];
@@ -114,7 +136,9 @@ export const calculateHeadToHead = (
 
 export const getHeadToHeadMatrix = (
   matches: Match[],
-  playerIds: string[]
+  playerIds: string[],
+  dateFrom?: Date,
+  dateTo?: Date
 ): Map<string, Map<string, HeadToHeadStats>> => {
   const matrix = new Map<string, Map<string, HeadToHeadStats>>();
 
@@ -122,7 +146,7 @@ export const getHeadToHeadMatrix = (
     const row = new Map<string, HeadToHeadStats>();
     playerIds.forEach(player2Id => {
       if (player1Id !== player2Id) {
-        row.set(player2Id, calculateHeadToHead(matches, player1Id, player2Id));
+        row.set(player2Id, calculateHeadToHead(matches, player1Id, player2Id, dateFrom, dateTo));
       }
     });
     matrix.set(player1Id, row);
