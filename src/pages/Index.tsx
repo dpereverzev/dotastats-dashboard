@@ -16,6 +16,27 @@ const Index = () => {
   
   const { data, loading, error } = useMatchData();
 
+  const { playerStats, h2hMatrix } = useMemo(() => {
+    if (!data) return { playerStats: new Map(), h2hMatrix: new Map() };
+    const stats = calculatePlayerStats(data.data, dateFrom, dateTo);
+    const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()), dateFrom, dateTo);
+    return { playerStats: stats, h2hMatrix: matrix };
+  }, [data, dateFrom, dateTo]);
+
+  const totalMatches = useMemo(() => {
+    if (!data) return 0;
+    let matches = data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota');
+    if (dateFrom || dateTo) {
+      matches = matches.filter(match => {
+        const matchDate = new Date(match.time);
+        if (dateFrom && matchDate < dateFrom) return false;
+        if (dateTo && matchDate > dateTo) return false;
+        return true;
+      });
+    }
+    return matches.length;
+  }, [data, dateFrom, dateTo]);
+
   if (loading) {
     return <LoadingScreen />;
   }
@@ -35,25 +56,6 @@ const Index = () => {
       </div>
     );
   }
-
-  const { playerStats, h2hMatrix } = useMemo(() => {
-    const stats = calculatePlayerStats(data.data, dateFrom, dateTo);
-    const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()), dateFrom, dateTo);
-    return { playerStats: stats, h2hMatrix: matrix };
-  }, [data, dateFrom, dateTo]);
-
-  const totalMatches = useMemo(() => {
-    let matches = data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota');
-    if (dateFrom || dateTo) {
-      matches = matches.filter(match => {
-        const matchDate = new Date(match.time);
-        if (dateFrom && matchDate < dateFrom) return false;
-        if (dateTo && matchDate > dateTo) return false;
-        return true;
-      });
-    }
-    return matches.length;
-  }, [data, dateFrom, dateTo]);
 
   const selectedPlayer = selectedPlayerId ? playerStats.get(selectedPlayerId) : null;
   const selectedH2H = selectedPlayerId ? h2hMatrix.get(selectedPlayerId) : null;
