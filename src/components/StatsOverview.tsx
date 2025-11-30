@@ -24,7 +24,7 @@ type SortDirection = 'asc' | 'desc';
 export const StatsOverview = ({ 
   playerStats, 
   onPlayerSelect, 
-  dateFrom, 
+  dateFrom,
   dateTo, 
   onDateFromChange, 
   onDateToChange 
@@ -163,7 +163,7 @@ export const StatsOverview = ({
                   <div className="text-2xl font-bold text-primary">
                     {player.totalMatches}
                   </div>
-                  <div className="text-xs text-muted-foreground">Matches played</div>
+                  <div className="text-xs text-muted-foreground">Matches</div>
                 </div>
 
                 <div className="text-center w-[80px]">
