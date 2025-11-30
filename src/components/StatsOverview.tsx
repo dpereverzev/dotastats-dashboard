@@ -18,7 +18,7 @@ interface StatsOverviewProps {
   onDateToChange: (date: Date | undefined) => void;
 }
 
-type SortField = 'winRate' | 'wins' | 'losses' | 'mmr';
+type SortField = 'winRate' | 'wins' | 'losses' | 'mmrChange';
 type SortDirection = 'asc' | 'desc';
 
 export const StatsOverview = ({ 
@@ -31,7 +31,7 @@ export const StatsOverview = ({
 }: StatsOverviewProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [minGames, setMinGames] = useState<number>(0);
-  const [sortField, setSortField] = useState<SortField>('mmr');
+  const [sortField, setSortField] = useState<SortField>('mmrChange');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const handleSort = (field: SortField) => {
@@ -50,7 +50,7 @@ export const StatsOverview = ({
         player.totalMatches >= minGames
       )
       .sort((a, b) => {
-        const multiplier = sortDirection === 'desc' ? -1 : 1;
+        const multiplier = sortDirection === 'desc' ? 1 : -1;
         return (b[sortField] - a[sortField]) * multiplier;
       });
   }, [playerStats, searchQuery, minGames, sortField, sortDirection]);
@@ -124,11 +124,11 @@ export const StatsOverview = ({
           {sortField === 'losses' && <ArrowUpDown className="h-3 w-3" />}
         </button>
         <button
-          onClick={() => handleSort('mmr')}
+          onClick={() => handleSort('mmrChange')}
           className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
         >
           MMR
-          {sortField === 'mmr' && <ArrowUpDown className="h-3 w-3" />}
+          {sortField === 'mmrChange' && <ArrowUpDown className="h-3 w-3" />}
         </button>
       </div>
 
