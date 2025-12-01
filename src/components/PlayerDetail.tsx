@@ -20,7 +20,7 @@ interface PlayerDetailProps {
   onBack: () => void;
 }
 
-type H2HSortField = 'matches' | 'winRateWith' | 'winRateAgainst';
+type H2HSortField = 'matches' | 'winsW' | 'lossesW' | 'winsVs' | 'lossesVs';
 type SortDirection = 'asc' | 'desc';
 
 export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, onDateFromChange, onDateToChange, onBack }: PlayerDetailProps) => {
@@ -58,10 +58,14 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, o
         
         if (sortField === 'matches') {
           return (b.stats.matchesWithBoth - a.stats.matchesWithBoth) * multiplier;
-        } else if (sortField === 'winRateWith') {
-          return (b.stats.winRateWith - a.stats.winRateWith) * multiplier;
+        } else if (sortField === 'winsW') {
+          return (b.stats.player1WinsWithPlayer2 - a.stats.player1WinsWithPlayer2) * multiplier;
+        } else if (sortField === 'lossesW') {
+          return (b.stats.player1LosesWithPlayer2 - a.stats.player1LosesWithPlayer2) * multiplier;
+        } else if (sortField === 'winsVs') {
+          return (b.stats.player1WinsAgainstPlayer2 - a.stats.player1WinsAgainstPlayer2) * multiplier;
         } else {
-          return (b.stats.winRateAgainst - a.stats.winRateAgainst) * multiplier;
+          return (b.stats.player1LossesAgainstPlayer2 - a.stats.player1LossesAgainstPlayer2) * multiplier;
         }
       });
   }, [h2hStats, allPlayers, sortField, sortDirection, searchQuery]);
@@ -173,18 +177,32 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, o
             {sortField === 'matches' && <ArrowUpDown className="h-3 w-3" />}
           </button>
           <button
-            onClick={() => handleSort('winRateWith')}
+            onClick={() => handleSort('winsW')}
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
           >
-            Win Rate With
-            {sortField === 'winRateWith' && <ArrowUpDown className="h-3 w-3" />}
+            Wins With
+            {sortField === 'winsW' && <ArrowUpDown className="h-3 w-3" />}
           </button>
           <button
-            onClick={() => handleSort('winRateAgainst')}
+            onClick={() => handleSort('lossesW')}
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
           >
-            Win Rate VS
-            {sortField === 'winRateAgainst' && <ArrowUpDown className="h-3 w-3" />}
+            Losses With
+            {sortField === 'lossesW' && <ArrowUpDown className="h-3 w-3" />}
+          </button>
+          <button
+            onClick={() => handleSort('winsVs')}
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          >
+            Wins VS
+            {sortField === 'winsVs' && <ArrowUpDown className="h-3 w-3" />}
+          </button>
+          <button
+            onClick={() => handleSort('lossesVs')}
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          >
+            Losses VS
+            {sortField === 'lossesVs' && <ArrowUpDown className="h-3 w-3" />}
           </button>
         </div>
         
@@ -204,30 +222,37 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, o
 
                 <div className="flex items-center gap-4">
                   <div className="text-center min-w-[80px]">
-                    <div className="text-xs text-muted-foreground mb-1">Total matches:</div>
+                    <div className="text-xs text-muted-foreground mb-1">Matches</div>
                     <div className="text-lg font-semibold text-foreground">
                       {stats.matchesWithBoth}
                     </div>
-                    <div className="text-xs font-bold">&emsp;</div>
                   </div>
 
-                  <div className="text-center min-w-[100px]">
-                    <div className="text-xs text-muted-foreground mb-1">With Teammate</div>
-                    <div className={`text-lg font-bold ${getWinRateColor(stats.winRateWith)}`}>
-                      {stats.winRateWith.toFixed(1)}%
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats.player1WinsWithPlayer2}W - {stats.player1LosesWithPlayer2}L
+                  <div className="text-center min-w-[70px]">
+                    <div className="text-xs text-muted-foreground mb-1">Wins With</div>
+                    <div className="text-lg font-bold text-success">
+                      {stats.player1WinsWithPlayer2}
                     </div>
                   </div>
 
-                  <div className="text-center min-w-[100px]">
-                    <div className="text-xs text-muted-foreground mb-1">VS</div>
-                    <div className={`text-lg font-bold ${getWinRateColor(stats.winRateAgainst)}`}>
-                      {stats.winRateAgainst.toFixed(1)}%
+                  <div className="text-center min-w-[70px]">
+                    <div className="text-xs text-muted-foreground mb-1">Losses With</div>
+                    <div className="text-lg font-bold text-destructive">
+                      {stats.player1LosesWithPlayer2}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats.player1WinsAgainstPlayer2}W - {stats.player1LossesAgainstPlayer2}L
+                  </div>
+
+                  <div className="text-center min-w-[70px]">
+                    <div className="text-xs text-muted-foreground mb-1">Wins VS</div>
+                    <div className="text-lg font-bold text-success">
+                      {stats.player1WinsAgainstPlayer2}
+                    </div>
+                  </div>
+
+                  <div className="text-center min-w-[70px]">
+                    <div className="text-xs text-muted-foreground mb-1">Losses VS</div>
+                    <div className="text-lg font-bold text-destructive">
+                      {stats.player1LossesAgainstPlayer2}
                     </div>
                   </div>
                 </div>
