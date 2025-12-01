@@ -1,22 +1,32 @@
 import { PlayerStats, HeadToHeadStats } from "@/types/match";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, Swords, ArrowUpDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, Users, Swords, ArrowUpDown, Search, CalendarIcon, X } from "lucide-react";
 import { useState, useMemo } from "react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface PlayerDetailProps {
   player: PlayerStats;
   h2hStats: Map<string, HeadToHeadStats>;
   allPlayers: Map<string, PlayerStats>;
+  dateFrom?: Date;
+  dateTo?: Date;
+  onDateFromChange: (date: Date | undefined) => void;
+  onDateToChange: (date: Date | undefined) => void;
   onBack: () => void;
 }
 
 type H2HSortField = 'matches' | 'winRateWith' | 'winRateAgainst';
 type SortDirection = 'asc' | 'desc';
 
-export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDetailProps) => {
+export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, onDateFromChange, onDateToChange, onBack }: PlayerDetailProps) => {
   const [sortField, setSortField] = useState<H2HSortField>('matches');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSort = (field: H2HSortField) => {
     if (sortField === field) {
@@ -39,7 +49,10 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDet
         player: allPlayers.get(playerId)!,
         stats,
       }))
-      .filter(item => item.player)
+      .filter(item => 
+        item.player && 
+        item.player.playerName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
       .sort((a, b) => {
         const multiplier = sortDirection === 'desc' ? 1 : -1;
         
@@ -51,7 +64,7 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDet
           return (b.stats.winRateAgainst - a.stats.winRateAgainst) * multiplier;
         }
       });
-  }, [h2hStats, allPlayers, sortField, sortDirection]);
+  }, [h2hStats, allPlayers, sortField, sortDirection, searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -101,6 +114,54 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, onBack }: PlayerDet
           <Swords className="h-5 w-5 text-primary" />
           Head-to-Head Performance
         </h3>
+
+        <div className="flex gap-3 flex-wrap mb-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search opponents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, "PPP") : "Date from"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateFrom} onSelect={onDateFromChange} initialFocus className="pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+            {dateFrom && (
+              <Button variant="ghost" size="icon" onClick={() => onDateFromChange(undefined)} className="h-10 w-10">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, "PPP") : "Date to"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateTo} onSelect={onDateToChange} initialFocus className="pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+            {dateTo && (
+              <Button variant="ghost" size="icon" onClick={() => onDateToChange(undefined)} className="h-10 w-10">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
 
         <div className="flex gap-2 items-center justify-end text-sm text-muted-foreground mb-4">
           <span>Sort by:</span>
