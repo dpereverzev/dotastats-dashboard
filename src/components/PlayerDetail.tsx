@@ -20,7 +20,7 @@ interface PlayerDetailProps {
   onBack: () => void;
 }
 
-type H2HSortField = 'matches' | 'winsW' | 'lossesW' | 'winsVs' | 'lossesVs';
+type H2HSortField = 'matches' | 'winsW' | 'lossesW' | 'winsVs' | 'lossesVs' | 'winRateWith' | 'winRateAgainst';
 type SortDirection = 'asc' | 'desc';
 
 export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, onDateFromChange, onDateToChange, onBack }: PlayerDetailProps) => {
@@ -58,6 +58,10 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, o
         
         if (sortField === 'matches') {
           return (b.stats.matchesWithBoth - a.stats.matchesWithBoth) * multiplier;
+        } else if (sortField === 'winRateWith') {
+          return (b.stats.winRateWith - a.stats.winRateWith) * multiplier;
+        } else if (sortField === 'winRateAgainst') {
+          return (b.stats.winRateAgainst - a.stats.winRateAgainst) * multiplier;
         } else if (sortField === 'winsW') {
           return (b.stats.player1WinsWithPlayer2 - a.stats.player1WinsWithPlayer2) * multiplier;
         } else if (sortField === 'lossesW') {
@@ -134,7 +138,7 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, o
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateFrom ? format(dateFrom, "PPP") : "Date from"}
+                  {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Date from"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -152,7 +156,7 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, o
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateTo ? format(dateTo, "PPP") : "Date to"}
+                  {dateTo ? format(dateTo, "dd/MM/yyyy") : "Date to"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -174,42 +178,59 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, o
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
           >
             Total Matches
-            {sortField === 'matches' && <ArrowUpDown className="h-3 w-3" />}
+            {sortField === 'matches' && <ArrowUpDown className="h-3 w-3"/>}
           </button>
+
+          <button
+            onClick={() => handleSort('winRateWith')}
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          >
+            Win Rate With
+            {sortField === 'winRateWith' && <ArrowUpDown className="h-3 w-3"/>}
+          </button>
+
+          <button
+            onClick={() => handleSort('winRateAgainst')}
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+          >
+            Win Rate VS
+            {sortField === 'winRateAgainst' && <ArrowUpDown className="h-3 w-3"/>}
+          </button>
+
           <button
             onClick={() => handleSort('winsW')}
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
           >
             Wins With
-            {sortField === 'winsW' && <ArrowUpDown className="h-3 w-3" />}
+            {sortField === 'winsW' && <ArrowUpDown className="h-3 w-3"/>}
           </button>
           <button
             onClick={() => handleSort('lossesW')}
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
           >
             Losses With
-            {sortField === 'lossesW' && <ArrowUpDown className="h-3 w-3" />}
+            {sortField === 'lossesW' && <ArrowUpDown className="h-3 w-3"/>}
           </button>
           <button
             onClick={() => handleSort('winsVs')}
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
           >
             Wins VS
-            {sortField === 'winsVs' && <ArrowUpDown className="h-3 w-3" />}
+            {sortField === 'winsVs' && <ArrowUpDown className="h-3 w-3"/>}
           </button>
           <button
             onClick={() => handleSort('lossesVs')}
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
           >
             Losses VS
-            {sortField === 'lossesVs' && <ArrowUpDown className="h-3 w-3" />}
+            {sortField === 'lossesVs' && <ArrowUpDown className="h-3 w-3"/>}
           </button>
         </div>
-        
+
         <div className="space-y-2">
-          {sortedH2H.map(({ player: opponent, stats }) => {
+          {sortedH2H.map(({player: opponent, stats}) => {
             const totalAgainst = stats.player1WinsAgainstPlayer2 + stats.player1LossesAgainstPlayer2;
-            
+
             if (totalAgainst === 0) return null;
 
             return (
@@ -225,6 +246,20 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, o
                     <div className="text-xs text-muted-foreground mb-1">Matches</div>
                     <div className="text-lg font-semibold text-foreground">
                       {stats.matchesWithBoth}
+                    </div>
+                  </div>
+
+                  <div className="text-center min-w-[100px]">
+                    <div className="text-xs text-muted-foreground mb-1">With Teammate</div>
+                    <div className={`text-lg font-bold ${getWinRateColor(stats.winRateWith)}`}>
+                      {stats.winRateWith.toFixed(1)}%
+                    </div>
+                  </div>
+
+                  <div className="text-center min-w-[100px]">
+                    <div className="text-xs text-muted-foreground mb-1">VS</div>
+                    <div className={`text-lg font-bold ${getWinRateColor(stats.winRateAgainst)}`}>
+                      {stats.winRateAgainst.toFixed(1)}%
                     </div>
                   </div>
 
