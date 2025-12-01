@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition, useDeferredValue } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { StatsOverview } from "@/components/StatsOverview";
@@ -14,29 +14,35 @@ const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [isPending, startTransition] = useTransition();
+  
+  // Defer the date values to prevent blocking UI updates
+  const deferredDateFrom = useDeferredValue(dateFrom);
+  const deferredDateTo = useDeferredValue(dateTo);
   
   const { data, loading, error } = useMatchData();
 
+  // Use deferred values for expensive calculations
   const { playerStats, h2hMatrix } = useMemo(() => {
     if (!data) return { playerStats: new Map(), h2hMatrix: new Map() };
-    const stats = calculatePlayerStats(data.data, startOfDay(dateFrom), endOfDay(dateTo));
-    const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()), dateFrom, dateTo);
+    const stats = calculatePlayerStats(data.data, deferredDateFrom ? startOfDay(deferredDateFrom) : undefined, deferredDateTo ? endOfDay(deferredDateTo) : undefined);
+    const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()), deferredDateFrom, deferredDateTo);
     return { playerStats: stats, h2hMatrix: matrix };
-  }, [data, dateFrom, dateTo]);
+  }, [data, deferredDateFrom, deferredDateTo]);
 
   const totalMatches = useMemo(() => {
     if (!data) return 0;
     let matches = data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota');
-    if (dateFrom || dateTo) {
+    if (deferredDateFrom || deferredDateTo) {
       matches = matches.filter(match => {
         const matchDate = new Date(match.time);
-        if (dateFrom && matchDate < dateFrom) return false;
-        if (dateTo && matchDate > dateTo) return false;
+        if (deferredDateFrom && matchDate < deferredDateFrom) return false;
+        if (deferredDateTo && matchDate > deferredDateTo) return false;
         return true;
       });
     }
     return matches.length;
-  }, [data, dateFrom, dateTo]);
+  }, [data, deferredDateFrom, deferredDateTo]);
 
   if (loading) {
     return <LoadingScreen />;
@@ -61,6 +67,19 @@ const Index = () => {
   const selectedPlayer = selectedPlayerId ? playerStats.get(selectedPlayerId) : null;
   const selectedH2H = selectedPlayerId ? h2hMatrix.get(selectedPlayerId) : null;
 
+  // Wrap date changes in transitions to keep UI responsive
+  const handleDateFromChange = (date: Date | undefined) => {
+    startTransition(() => {
+      setDateFrom(date);
+    });
+  };
+
+  const handleDateToChange = (date: Date | undefined) => {
+    startTransition(() => {
+      setDateTo(date);
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -76,7 +95,7 @@ const Index = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8" style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
           <Card className="p-6 bg-gradient-to-br from-card to-muted border-primary/20">
             <div className="flex items-center justify-between">
               <div>
@@ -100,16 +119,18 @@ const Index = () => {
 
         {/* Main Content */}
         {selectedPlayer && selectedH2H ? (
-          <PlayerDetail
-            player={selectedPlayer}
-            h2hStats={selectedH2H}
-            allPlayers={playerStats}
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-            onDateFromChange={setDateFrom}
-            onDateToChange={setDateTo}
-            onBack={() => setSelectedPlayerId(null)}
-          />
+          <div style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
+            <PlayerDetail
+              player={selectedPlayer}
+              h2hStats={selectedH2H}
+              allPlayers={playerStats}
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+              onDateFromChange={handleDateFromChange}
+              onDateToChange={handleDateToChange}
+              onBack={() => setSelectedPlayerId(null)}
+            />
+          </div>
         ) : (
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 max-w-md">
@@ -117,25 +138,25 @@ const Index = () => {
               <TabsTrigger value="matrix">Head-to-Head Matrix</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="overview" className="space-y-6" style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
               <StatsOverview 
                 playerStats={playerStats}
                 onPlayerSelect={setSelectedPlayerId}
                 dateFrom={dateFrom}
                 dateTo={dateTo}
-                onDateFromChange={setDateFrom}
-                onDateToChange={setDateTo}
+                onDateFromChange={handleDateFromChange}
+                onDateToChange={handleDateToChange}
               />
             </TabsContent>
 
-            <TabsContent value="matrix" className="space-y-6">
+            <TabsContent value="matrix" className="space-y-6" style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
               <HeadToHeadMatrix 
                 playerStats={playerStats}
                 h2hMatrix={h2hMatrix}
                 dateFrom={dateFrom}
                 dateTo={dateTo}
-                onDateFromChange={setDateFrom}
-                onDateToChange={setDateTo}
+                onDateFromChange={handleDateFromChange}
+                onDateToChange={handleDateToChange}
               />
             </TabsContent>
           </Tabs>
