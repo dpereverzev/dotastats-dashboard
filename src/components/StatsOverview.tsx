@@ -2,7 +2,7 @@ import { PlayerStats } from "@/types/match";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { Search, TrendingUp, TrendingDown, ArrowUpDown, CalendarIcon } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, ArrowUpDown, CalendarIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -76,28 +76,42 @@ export const StatsOverview = ({
             onChange={(e) => setMinGames(Math.max(0, parseInt(e.target.value) || 0))}
           />
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Date from"}
+        <div className="flex gap-1">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Date from"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={dateFrom} onSelect={onDateFromChange} initialFocus className="pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+          {dateFrom && (
+            <Button variant="ghost" size="icon" onClick={() => onDateFromChange(undefined)} className="h-10 w-10">
+              <X className="h-4 w-4" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={dateFrom} onSelect={onDateFromChange} initialFocus />
-          </PopoverContent>
-        </Popover>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateTo ? format(dateTo, "dd/MM/yyyy") : "Date to"}
+          )}
+        </div>
+        <div className="flex gap-1">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateTo ? format(dateTo, "dd/MM/yyyy") : "Date to"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={dateTo} onSelect={onDateToChange} initialFocus className="pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+          {dateTo && (
+            <Button variant="ghost" size="icon" onClick={() => onDateToChange(undefined)} className="h-10 w-10">
+              <X className="h-4 w-4" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={dateTo} onSelect={onDateToChange} initialFocus />
-          </PopoverContent>
-        </Popover>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-6 items-center justify-end text-sm text-muted-foreground pr-4">
