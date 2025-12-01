@@ -104,6 +104,10 @@ const Index = () => {
             player={selectedPlayer}
             h2hStats={selectedH2H}
             allPlayers={playerStats}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
             onBack={() => setSelectedPlayerId(null)}
           />
         ) : (
