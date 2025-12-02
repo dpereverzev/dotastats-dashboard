@@ -70,13 +70,13 @@ const Index = () => {
   // Wrap date changes in transitions to keep UI responsive
   const handleDateFromChange = (date: Date | undefined) => {
     startTransition(() => {
-      setDateFrom(date);
+      setDateFrom(startOfDay(date));
     });
   };
 
   const handleDateToChange = (date: Date | undefined) => {
     startTransition(() => {
-      setDateTo(date);
+      setDateTo(endOfDay(date));
     });
   };
 

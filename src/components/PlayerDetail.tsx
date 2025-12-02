@@ -230,8 +230,9 @@ export const PlayerDetail = ({ player, h2hStats, allPlayers, dateFrom, dateTo, o
         <div className="space-y-2">
           {sortedH2H.map(({player: opponent, stats}) => {
             const totalAgainst = stats.player1WinsAgainstPlayer2 + stats.player1LossesAgainstPlayer2;
+            const totalTogether = stats.player1WinsWithPlayer2 + stats.player1LosesWithPlayer2;
 
-            if (totalAgainst === 0) return null;
+            if (totalAgainst === 0 && totalTogether === 0) return null;
 
             return (
               <div key={opponent.playerId} className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/70 transition-colors">
