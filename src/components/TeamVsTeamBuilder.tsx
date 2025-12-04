@@ -125,6 +125,32 @@ export const TeamVsTeamBuilder = ({ playerStats, matches, dateFrom, dateTo }: Te
 
   const team1WinRate = result.totalGames > 0 ? (result.team1Wins / result.totalGames) * 100 : 0;
 
+  // Calculate teammate suggestions
+  const suggestions = useMemo(() => {
+    if (team1.length === 0 || team2.length === 0 || team1.length >= 5) {
+      return { best: [], worst: [] };
+    }
+
+    const team1Ids = team1.map(p => p.playerId);
+    const team2Ids = team2.map(p => p.playerId);
+    const availablePlayers = allPlayers.filter(p => 
+      !team1Ids.includes(p.playerId) && !team2Ids.includes(p.playerId)
+    );
+
+    const playerResults = availablePlayers.map(player => {
+      const testTeam1 = [...team1Ids, player.playerId];
+      const res = calculateTeamVsTeam(matches, testTeam1, team2Ids, dateFrom, dateTo);
+      const winRate = res.totalGames > 0 ? (res.team1Wins / res.totalGames) * 100 : -1;
+      return { player, ...res, winRate };
+    }).filter(r => r.totalGames > 0);
+
+    const sorted = [...playerResults].sort((a, b) => b.winRate - a.winRate);
+    const best = sorted.slice(0, 5);
+    const worst = sorted.slice(-5).reverse();
+
+    return { best, worst };
+  }, [team1, team2, allPlayers, matches, dateFrom, dateTo]);
+
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between mb-4">
@@ -235,6 +261,55 @@ export const TeamVsTeamBuilder = ({ playerStats, matches, dateFrom, dateTo }: Te
           </ScrollArea>
         )}
       </div>
+
+      {/* Teammate Suggestions */}
+      {(suggestions.best.length > 0 || suggestions.worst.length > 0) && (
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Best Teammates */}
+          <div className="p-3 rounded-lg border border-success/30 bg-success/5">
+            <h4 className="font-medium text-success mb-2">Top 5 Best Teammates for Team 1</h4>
+            <div className="space-y-1">
+              {suggestions.best.map((s, i) => (
+                <div 
+                  key={s.player.playerId} 
+                  className="flex items-center justify-between text-sm p-1.5 rounded hover:bg-success/10 cursor-pointer"
+                  onClick={() => { if (team1.length < 5) addToTeam(s.player); }}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-muted-foreground w-4">{i + 1}.</span>
+                    <span className="font-medium">{s.player.playerName}</span>
+                  </span>
+                  <span className="text-success font-medium">
+                    {s.winRate.toFixed(0)}% ({s.team1Wins}-{s.team2Wins})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Worst Teammates */}
+          <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+            <h4 className="font-medium text-destructive mb-2">Top 5 Worst Teammates for Team 1</h4>
+            <div className="space-y-1">
+              {suggestions.worst.map((s, i) => (
+                <div 
+                  key={s.player.playerId} 
+                  className="flex items-center justify-between text-sm p-1.5 rounded hover:bg-destructive/10 cursor-pointer"
+                  onClick={() => { if (team1.length < 5) addToTeam(s.player); }}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-muted-foreground w-4">{i + 1}.</span>
+                    <span className="font-medium">{s.player.playerName}</span>
+                  </span>
+                  <span className="text-destructive font-medium">
+                    {s.winRate.toFixed(0)}% ({s.team1Wins}-{s.team2Wins})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };
