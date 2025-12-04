@@ -1,4 +1,4 @@
-import { PlayerStats, HeadToHeadStats } from "@/types/match";
+import { PlayerStats, HeadToHeadStats, Match } from "@/types/match";
 import { Card } from "@/components/ui/card";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TeamVsTeamBuilder } from "./TeamVsTeamBuilder";
 
 interface HeadToHeadMatrixProps {
   playerStats: Map<string, PlayerStats>;
   h2hMatrix: Map<string, Map<string, HeadToHeadStats>>;
+  matches: Match[];
   dateFrom?: Date;
   dateTo?: Date;
   onDateFromChange: (date: Date | undefined) => void;
@@ -21,6 +23,7 @@ interface HeadToHeadMatrixProps {
 export const HeadToHeadMatrix = ({ 
   playerStats, 
   h2hMatrix, 
+  matches,
   dateFrom, 
   dateTo, 
   onDateFromChange, 
@@ -48,6 +51,12 @@ export const HeadToHeadMatrix = ({
 
   return (
     <div className="space-y-6">
+      <TeamVsTeamBuilder 
+        playerStats={playerStats} 
+        matches={matches} 
+        dateFrom={dateFrom} 
+        dateTo={dateTo} 
+      />
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

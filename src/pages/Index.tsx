@@ -153,6 +153,7 @@ const Index = () => {
               <HeadToHeadMatrix 
                 playerStats={playerStats}
                 h2hMatrix={h2hMatrix}
+                matches={data?.data || []}
                 dateFrom={dateFrom}
                 dateTo={dateTo}
                 onDateFromChange={handleDateFromChange}
