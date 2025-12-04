@@ -128,7 +128,7 @@ export const TeamVsTeamBuilder = ({ playerStats, matches, dateFrom, dateTo }: Te
   // Calculate teammate suggestions
   const suggestions = useMemo(() => {
     if (team1.length === 0 || team2.length === 0 || team1.length >= 5) {
-      return { best: [], worst: [] };
+      return [];
     }
 
     const team1Ids = team1.map(p => p.playerId);
@@ -144,11 +144,7 @@ export const TeamVsTeamBuilder = ({ playerStats, matches, dateFrom, dateTo }: Te
       return { player, ...res, winRate };
     }).filter(r => r.totalGames > 0);
 
-    const sorted = [...playerResults].sort((a, b) => b.winRate - a.winRate);
-    const best = sorted.slice(0, 5);
-    const worst = sorted.slice(-5).reverse();
-
-    return { best, worst };
+    return playerResults.sort((a, b) => b.totalGames - a.totalGames);
   }, [team1, team2, allPlayers, matches, dateFrom, dateTo]);
 
   return (
@@ -263,51 +259,28 @@ export const TeamVsTeamBuilder = ({ playerStats, matches, dateFrom, dateTo }: Te
       </div>
 
       {/* Teammate Suggestions */}
-      {(suggestions.best.length > 0 || suggestions.worst.length > 0) && (
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Best Teammates */}
-          <div className="p-3 rounded-lg border border-success/30 bg-success/5">
-            <h4 className="font-medium text-success mb-2">Top 5 Best Teammates for Team 1</h4>
+      {suggestions.length > 0 && (
+        <div className="mt-4 p-3 rounded-lg border border-border">
+          <h4 className="font-medium mb-2">Teammate Stats vs Team 2 (sorted by games played)</h4>
+          <ScrollArea className="h-[300px]">
             <div className="space-y-1">
-              {suggestions.best.map((s, i) => (
+              {suggestions.map((s) => (
                 <div 
                   key={s.player.playerId} 
-                  className="flex items-center justify-between text-sm p-1.5 rounded hover:bg-success/10 cursor-pointer"
+                  className="flex items-center justify-between text-sm p-1.5 rounded hover:bg-muted cursor-pointer"
                   onClick={() => { if (team1.length < 5) addToTeam(s.player); }}
                 >
-                  <span className="flex items-center gap-2">
-                    <span className="text-muted-foreground w-4">{i + 1}.</span>
-                    <span className="font-medium">{s.player.playerName}</span>
-                  </span>
-                  <span className="text-success font-medium">
-                    {s.winRate.toFixed(0)}% ({s.team1Wins}-{s.team2Wins})
+                  <span className="font-medium">{s.player.playerName}</span>
+                  <span className="flex items-center gap-3">
+                    <span className="text-muted-foreground">{s.totalGames} games</span>
+                    <span className={s.winRate >= 50 ? 'text-success' : 'text-destructive'}>
+                      {s.winRate.toFixed(0)}% ({s.team1Wins}-{s.team2Wins})
+                    </span>
                   </span>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Worst Teammates */}
-          <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5">
-            <h4 className="font-medium text-destructive mb-2">Top 5 Worst Teammates for Team 1</h4>
-            <div className="space-y-1">
-              {suggestions.worst.map((s, i) => (
-                <div 
-                  key={s.player.playerId} 
-                  className="flex items-center justify-between text-sm p-1.5 rounded hover:bg-destructive/10 cursor-pointer"
-                  onClick={() => { if (team1.length < 5) addToTeam(s.player); }}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="text-muted-foreground w-4">{i + 1}.</span>
-                    <span className="font-medium">{s.player.playerName}</span>
-                  </span>
-                  <span className="text-destructive font-medium">
-                    {s.winRate.toFixed(0)}% ({s.team1Wins}-{s.team2Wins})
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          </ScrollArea>
         </div>
       )}
     </Card>
