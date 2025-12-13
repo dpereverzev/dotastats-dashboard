@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
 import { MatchData } from '@/types/match';
 
-const API_URL = 'https://api.neatqueue.com/api/v1/history/1225010401000034425?page_size=1000&start_date=2025-09-08&limit=1000&order=asc';
+const BASE_URL = 'https://api.neatqueue.com/api/v1/history/1225010401000034425';
 
-export const useMatchData = () => {
+interface UseMatchDataOptions {
+  startDate?: string;
+  endDate?: string;
+}
+
+export const useMatchData = (options?: UseMatchDataOptions) => {
   const [data, setData] = useState<MatchData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const startDate = options?.startDate || '2025-09-08';
+  const endDate = options?.endDate;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -14,7 +22,12 @@ export const useMatchData = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch(API_URL);
+        let url = `${BASE_URL}?page_size=1000&start_date=${startDate}&limit=1000&order=asc`;
+        if (endDate) {
+          url += `&end_date=${endDate}`;
+        }
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch data: ${response.status}`);
@@ -31,7 +44,7 @@ export const useMatchData = () => {
     };
 
     fetchData();
-  }, []);
+  }, [startDate, endDate]);
 
   return { data, loading, error };
 };
