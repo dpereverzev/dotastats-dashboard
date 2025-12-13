@@ -1,11 +1,12 @@
 import { Match, PlayerStats, HeadToHeadStats } from "@/types/match";
 
+
 export const calculatePlayerStats = (matches: Match[], dateFrom?: Date, dateTo?: Date): Map<string, PlayerStats> => {
   const playerStatsMap = new Map<string, PlayerStats>();
 
   // Filter out cancelled matches and apply date filter
   let validMatches = matches.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota' && match.winner !== -2);
-  
+
   if (dateFrom || dateTo) {
     validMatches = validMatches.filter(match => {
       const matchDate = new Date(match.time);
