@@ -30,7 +30,12 @@ const Index = () => {
   const deferredDateFrom = useDeferredValue(dateFrom);
   const deferredDateTo = useDeferredValue(dateTo);
   
-  const { data, loading, error } = useMatchData();
+  // Fetch data based on selected season
+  const season = SEASONS[selectedSeason];
+  const { data, loading, error } = useMatchData({
+    startDate: season.startDate,
+    endDate: season.endDate || undefined,
+  });
 
   // Get effective date range based on season + custom date filters
   const effectiveDates = useMemo(() => {
