@@ -60,7 +60,7 @@ const Index = () => {
 
   const totalMatches = useMemo(() => {
     if (!data) return 0;
-    let matches = data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota');
+    let matches = data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota' && match.winner !== -2);
     matches = matches.filter(match => {
       const matchDate = new Date(match.time);
       if (effectiveDates.fromDate && matchDate < effectiveDates.fromDate) return false;

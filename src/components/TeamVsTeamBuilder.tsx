@@ -31,7 +31,7 @@ const calculateTeamVsTeam = (
     return { totalGames: 0, team1Wins: 0, team2Wins: 0 };
   }
 
-  let validMatches = matches.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota');
+  let validMatches = matches.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota' && match.winner !== -2);
   
   if (dateFrom || dateTo) {
     validMatches = validMatches.filter(match => {
