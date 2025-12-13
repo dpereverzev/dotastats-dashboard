@@ -10,8 +10,18 @@ import { useMatchData } from "@/hooks/useMatchData";
 import { Trophy, Target, Grid3x3, AlertCircle } from "lucide-react";
 import { endOfDay, startOfDay } from 'date-fns';
 
+// Season definitions
+const SEASONS = {
+  season1: { label: "Season 1", startDate: "2025-09-08", endDate: "2025-12-12" },
+  season2: { label: "Season 2", startDate: "2025-12-13", endDate: null },
+  all: { label: "All Time", startDate: "2025-09-08", endDate: null },
+} as const;
+
+type SeasonKey = keyof typeof SEASONS;
+
 const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>("season2");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [isPending, startTransition] = useTransition();
@@ -22,27 +32,38 @@ const Index = () => {
   
   const { data, loading, error } = useMatchData();
 
+  // Get effective date range based on season + custom date filters
+  const effectiveDates = useMemo(() => {
+    const season = SEASONS[selectedSeason];
+    let fromDate = season.startDate ? startOfDay(new Date(season.startDate)) : undefined;
+    let toDate = season.endDate ? endOfDay(new Date(season.endDate)) : undefined;
+    
+    // Custom date filters override season defaults if set
+    if (deferredDateFrom) fromDate = startOfDay(deferredDateFrom);
+    if (deferredDateTo) toDate = endOfDay(deferredDateTo);
+    
+    return { fromDate, toDate };
+  }, [selectedSeason, deferredDateFrom, deferredDateTo]);
+
   // Use deferred values for expensive calculations
   const { playerStats, h2hMatrix } = useMemo(() => {
     if (!data) return { playerStats: new Map(), h2hMatrix: new Map() };
-    const stats = calculatePlayerStats(data.data, deferredDateFrom ? startOfDay(deferredDateFrom) : undefined, deferredDateTo ? endOfDay(deferredDateTo) : undefined);
-    const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()), deferredDateFrom, deferredDateTo);
+    const stats = calculatePlayerStats(data.data, effectiveDates.fromDate, effectiveDates.toDate);
+    const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()), effectiveDates.fromDate, effectiveDates.toDate);
     return { playerStats: stats, h2hMatrix: matrix };
-  }, [data, deferredDateFrom, deferredDateTo]);
+  }, [data, effectiveDates]);
 
   const totalMatches = useMemo(() => {
     if (!data) return 0;
     let matches = data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota');
-    if (deferredDateFrom || deferredDateTo) {
-      matches = matches.filter(match => {
-        const matchDate = new Date(match.time);
-        if (deferredDateFrom && matchDate < deferredDateFrom) return false;
-        if (deferredDateTo && matchDate > deferredDateTo) return false;
-        return true;
-      });
-    }
+    matches = matches.filter(match => {
+      const matchDate = new Date(match.time);
+      if (effectiveDates.fromDate && matchDate < effectiveDates.fromDate) return false;
+      if (effectiveDates.toDate && matchDate > effectiveDates.toDate) return false;
+      return true;
+    });
     return matches.length;
-  }, [data, deferredDateFrom, deferredDateTo]);
+  }, [data, effectiveDates]);
 
   if (loading) {
     return <LoadingScreen />;
@@ -80,6 +101,15 @@ const Index = () => {
     });
   };
 
+  const handleSeasonChange = (season: string) => {
+    startTransition(() => {
+      setSelectedSeason(season as SeasonKey);
+      // Reset custom date filters when changing season
+      setDateFrom(undefined);
+      setDateTo(undefined);
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -92,6 +122,17 @@ const Index = () => {
           <p className="text-muted-foreground">
             Comprehensive player analytics and head-to-head matchup data
           </p>
+        </div>
+
+        {/* Season Tabs */}
+        <div className="mb-6">
+          <Tabs value={selectedSeason} onValueChange={handleSeasonChange}>
+            <TabsList>
+              <TabsTrigger value="season2">Season 2</TabsTrigger>
+              <TabsTrigger value="season1">Season 1</TabsTrigger>
+              <TabsTrigger value="all">All Time</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {/* Stats Cards */}
@@ -113,6 +154,16 @@ const Index = () => {
                 <p className="text-3xl font-bold text-primary">{playerStats.size}</p>
               </div>
               <Grid3x3 className="h-8 w-8 text-primary/50" />
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-card to-muted border-primary/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Current Season</p>
+                <p className="text-xl font-bold text-primary">{SEASONS[selectedSeason].label}</p>
+              </div>
+              <Trophy className="h-8 w-8 text-primary/50" />
             </div>
           </Card>
         </div>
