@@ -13,7 +13,8 @@ import { endOfDay, startOfDay } from 'date-fns';
 // Season definitions
 const SEASONS = {
   season1: { label: "Season 1", startDate: "2025-09-08", endDate: "2025-12-09" },
-  season2: { label: "Season 2", startDate: "2025-12-12 22:00:00", endDate: null },
+  season2: { label: "Season 2", startDate: "2025-12-12 22:00:00", endDate: "2025-03-12" },
+  season3: { label: "Season 3", startDate: "2025-03-13", endDate: null },
   all: { label: "All Time", startDate: "2025-09-08", endDate: null },
 } as const;
 
@@ -21,7 +22,7 @@ type SeasonKey = keyof typeof SEASONS;
 
 const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>("season2");
+  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>("season3");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [isPending, startTransition] = useTransition();
@@ -133,6 +134,7 @@ const Index = () => {
         <div className="mb-6">
           <Tabs value={selectedSeason} onValueChange={handleSeasonChange}>
             <TabsList>
+              <TabsTrigger value="season3">Season 3</TabsTrigger>
               <TabsTrigger value="season2">Season 2</TabsTrigger>
               <TabsTrigger value="season1">Season 1</TabsTrigger>
               <TabsTrigger value="all">All Time</TabsTrigger>
