@@ -13,7 +13,8 @@ import { endOfDay, startOfDay } from 'date-fns';
 // Season definitions
 const SEASONS = {
   season1: { label: "Season 1", startDate: "2025-09-08", endDate: "2025-12-09" },
-  season2: { label: "Season 2", startDate: "2025-12-12 22:00:00", endDate: null },
+  season2: { label: "Season 2", startDate: "2025-12-12 22:00:00", endDate: "2025-03-12" },
+  season3: { label: "Season 3", startDate: "2025-03-13", endDate: null },
   all: { label: "All Time", startDate: "2025-09-08", endDate: null },
 } as const;
 
