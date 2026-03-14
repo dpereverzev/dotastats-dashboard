@@ -22,7 +22,7 @@ type SeasonKey = keyof typeof SEASONS;
 
 const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>("season2");
+  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>("season3");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [isPending, startTransition] = useTransition();
