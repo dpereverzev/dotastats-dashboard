@@ -134,6 +134,7 @@ const Index = () => {
         <div className="mb-6">
           <Tabs value={selectedSeason} onValueChange={handleSeasonChange}>
             <TabsList>
+              <TabsTrigger value="season3">Season 3</TabsTrigger>
               <TabsTrigger value="season2">Season 2</TabsTrigger>
               <TabsTrigger value="season1">Season 1</TabsTrigger>
               <TabsTrigger value="all">All Time</TabsTrigger>
