@@ -1,224 +1,282 @@
-import { useState, useMemo, useTransition, useDeferredValue } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { StatsOverview } from "@/components/StatsOverview";
-import { HeadToHeadMatrix } from "@/components/HeadToHeadMatrix";
-import { PlayerDetail } from "@/components/PlayerDetail";
-import { LoadingScreen } from "@/components/LoadingScreen";
-import { calculatePlayerStats, getHeadToHeadMatrix } from "@/utils/statsCalculator";
-import { useMatchData } from "@/hooks/useMatchData";
-import { Trophy, Target, Grid3x3, AlertCircle } from "lucide-react";
-import { endOfDay, startOfDay } from 'date-fns';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "@/hooks/use-toast";
+import { CaptainBoard } from "@/components/CaptainBoard";
+import {
+  DraftState,
+  Pick,
+  Player,
+  TOTAL_PICKS,
+  captainIndexForPick,
+  normalizeSteam,
+} from "@/lib/draft";
+import { Search, Shuffle, ShieldCheck, LogOut, Swords, RotateCcw } from "lucide-react";
 
-// Season definitions
-const SEASONS = {
-  season1: { label: "Season 1", startDate: "2025-09-08", endDate: "2025-12-09" },
-  season2: { label: "Season 2", startDate: "2025-12-12 22:00:00", endDate: "2026-03-12" },
-  season3: { label: "Season 3", startDate: "2026-03-13", endDate: null },
-  all: { label: "All Time", startDate: "2025-09-08", endDate: null },
-} as const;
-
-type SeasonKey = keyof typeof SEASONS;
+const STORAGE_KEY = "mixcup-steam-id";
 
 const Index = () => {
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>("season3");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [isPending, startTransition] = useTransition();
-  
-  // Defer the date values to prevent blocking UI updates
-  const deferredDateFrom = useDeferredValue(dateFrom);
-  const deferredDateTo = useDeferredValue(dateTo);
-  
-  // Fetch data based on selected season
-  const season = SEASONS[selectedSeason];
-  const { data, loading, error } = useMatchData({
-    startDate: season.startDate,
-    endDate: season.endDate || undefined,
-  });
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [picks, setPicks] = useState<Pick[]>([]);
+  const [draft, setDraft] = useState<DraftState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [steamInput, setSteamInput] = useState("");
+  const [myCaptainId, setMyCaptainId] = useState<string | null>(null);
+  const [mySteamId, setMySteamId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
+  const [search, setSearch] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  // Get effective date range based on season + custom date filters
-  const effectiveDates = useMemo(() => {
-    const season = SEASONS[selectedSeason];
-    let fromDate = season.startDate ? startOfDay(new Date(season.startDate)) : undefined;
-    let toDate = season.endDate ? endOfDay(new Date(season.endDate)) : undefined;
-    
-    // Custom date filters override season defaults if set
-    if (deferredDateFrom) fromDate = startOfDay(deferredDateFrom);
-    if (deferredDateTo) toDate = endOfDay(deferredDateTo);
-    
-    return { fromDate, toDate };
-  }, [selectedSeason, deferredDateFrom, deferredDateTo]);
+  const load = useCallback(async () => {
+    const [p, pk, d] = await Promise.all([
+      supabase.from("players").select("*").order("mmr", { ascending: false }),
+      supabase.from("picks").select("*").order("pick_number"),
+      supabase.from("draft").select("*").eq("id", "main").maybeSingle(),
+    ]);
+    if (p.data) setPlayers(p.data as Player[]);
+    if (pk.data) setPicks(pk.data as Pick[]);
+    if (d.data) setDraft(d.data as DraftState);
+    setLoading(false);
+  }, []);
 
-  // Use deferred values for expensive calculations
-  const { playerStats, h2hMatrix } = useMemo(() => {
-    if (!data) return { playerStats: new Map(), h2hMatrix: new Map() };
-    const stats = calculatePlayerStats(data.data, effectiveDates.fromDate, effectiveDates.toDate);
-    const matrix = getHeadToHeadMatrix(data.data, Array.from(stats.keys()), effectiveDates.fromDate, effectiveDates.toDate);
-    return { playerStats: stats, h2hMatrix: matrix };
-  }, [data, effectiveDates]);
+  useEffect(() => {
+    load();
+    const channel = supabase
+      .channel("draft-room")
+      .on("postgres_changes", { event: "*", schema: "public", table: "picks" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "draft" }, () => load())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [load]);
 
-  const totalMatches = useMemo(() => {
-    if (!data) return 0;
-    let matches = data.data.filter(match => match.winner !== -1 && match.winner !== 2 && match.game === 'dota' && match.winner !== -2);
-    matches = matches.filter(match => {
-      const matchDate = new Date(match.time);
-      if (effectiveDates.fromDate && matchDate < effectiveDates.fromDate) return false;
-      if (effectiveDates.toDate && matchDate > effectiveDates.toDate) return false;
-      return true;
-    });
-    return matches.length;
-  }, [data, effectiveDates]);
+  const playerById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
+  const captains = useMemo(() => players.filter((p) => p.is_captain), [players]);
+  const pickedIds = useMemo(() => new Set(picks.map((p) => p.player_id)), [picks]);
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
+  // Restore identity once players load
+  useEffect(() => {
+    if (!mySteamId || players.length === 0) return;
+    const key = normalizeSteam(mySteamId);
+    const me = players.find((p) => normalizeSteam(p.steam_raw) === key && p.is_captain);
+    setMyCaptainId(me ? me.id : null);
+  }, [mySteamId, players]);
 
-  if (error || !data) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-8 max-w-md">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <AlertCircle className="h-12 w-12 text-destructive" />
-            <h2 className="text-2xl font-bold text-foreground">Failed to Load Data</h2>
-            <p className="text-muted-foreground">
-              {error || "Could not fetch match data from the API. Please try again later."}
-            </p>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  const orderedCaptains = useMemo(() => {
+    if (!draft?.started || draft.pick_order.length === 0) return captains;
+    return draft.pick_order.map((id) => playerById.get(id)).filter(Boolean) as Player[];
+  }, [draft, captains, playerById]);
 
-  const selectedPlayer = selectedPlayerId ? playerStats.get(selectedPlayerId) : null;
-  const selectedH2H = selectedPlayerId ? h2hMatrix.get(selectedPlayerId) : null;
+  const currentCaptain = useMemo(() => {
+    if (!draft?.started || picks.length >= TOTAL_PICKS) return undefined;
+    const idx = captainIndexForPick(picks.length);
+    return playerById.get(draft.pick_order[idx]);
+  }, [draft, picks, playerById]);
 
-  // Wrap date changes in transitions to keep UI responsive
-  const handleDateFromChange = (date: Date | undefined) => {
-    startTransition(() => {
-      setDateFrom(startOfDay(date));
-    });
+  const available = useMemo(
+    () =>
+      players
+        .filter((p) => !p.is_captain && !pickedIds.has(p.id))
+        .filter((p) => p.name.toLowerCase().includes(search.toLowerCase().trim())),
+    [players, pickedIds, search],
+  );
+
+  const isMyTurn = !!currentCaptain && currentCaptain.id === myCaptainId;
+  const complete = draft?.started && picks.length >= TOTAL_PICKS;
+
+  const verify = () => {
+    const key = normalizeSteam(steamInput);
+    if (!key) return;
+    const me = players.find((p) => normalizeSteam(p.steam_raw) === key);
+    if (!me || !me.is_captain) {
+      toast({
+        title: "Not a captain",
+        description: "That Steam ID is not one of the 8 captains. Check it and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    localStorage.setItem(STORAGE_KEY, steamInput.trim());
+    setMySteamId(steamInput.trim());
+    setSteamInput("");
+    toast({ title: `Welcome, ${me.name}`, description: "You can pick when it is your turn." });
   };
 
-  const handleDateToChange = (date: Date | undefined) => {
-    startTransition(() => {
-      setDateTo(endOfDay(date));
-    });
+  const signOut = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setMySteamId(null);
+    setMyCaptainId(null);
   };
 
-  const handleSeasonChange = (season: string) => {
-    startTransition(() => {
-      setSelectedSeason(season as SeasonKey);
-      // Reset custom date filters when changing season
-      setDateFrom(undefined);
-      setDateTo(undefined);
+  const call = async (action: "start" | "pick" | "reset", playerId?: string) => {
+    if (!mySteamId) return;
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke("draft-action", {
+      body: { action, steamId: mySteamId, playerId },
     });
+    setBusy(false);
+    const message = (data as { error?: string } | null)?.error;
+    if (error || message) {
+      toast({
+        title: "Could not do that",
+        description: message ?? "Something went wrong, try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    load();
   };
+
+  const myCaptain = myCaptainId ? playerById.get(myCaptainId) : undefined;
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Trophy className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold text-foreground">Dota 2 Statistics</h1>
+      <div className="container mx-auto max-w-7xl px-4 py-8">
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <Swords className="h-8 w-8 text-primary" />
+              <h1 className="text-3xl font-bold sm:text-4xl">MixCup Draft</h1>
+            </div>
+            <p className="mt-1 text-muted-foreground">
+              8 captains, snake order, 4 picks each — live for everyone.
+            </p>
           </div>
-          <p className="text-muted-foreground">
-            Comprehensive player analytics and head-to-head matchup data
-          </p>
-        </div>
 
-        {/* Season Tabs */}
-        <div className="mb-6">
-          <Tabs value={selectedSeason} onValueChange={handleSeasonChange}>
-            <TabsList>
-              <TabsTrigger value="season3">Season 3</TabsTrigger>
-              <TabsTrigger value="season2">Season 2</TabsTrigger>
-              <TabsTrigger value="season1">Season 1</TabsTrigger>
-              <TabsTrigger value="all">All Time</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8" style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-          <Card className="p-6 bg-gradient-to-br from-card to-muted border-primary/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Matches</p>
-                <p className="text-3xl font-bold text-primary">{totalMatches}</p>
-              </div>
-              <Target className="h-8 w-8 text-primary/50" />
+          {myCaptain ? (
+            <div className="flex items-center gap-2">
+              <Badge className="gap-1.5 py-1.5">
+                <ShieldCheck className="h-4 w-4" />
+                {myCaptain.name}
+              </Badge>
+              <Button variant="ghost" size="sm" onClick={signOut}>
+                <LogOut className="mr-1.5 h-4 w-4" />
+                Sign out
+              </Button>
             </div>
-          </Card>
-          
-          <Card className="p-6 bg-gradient-to-br from-card to-muted border-primary/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Players</p>
-                <p className="text-3xl font-bold text-primary">{playerStats.size}</p>
-              </div>
-              <Grid3x3 className="h-8 w-8 text-primary/50" />
+          ) : (
+            <div className="flex w-full max-w-sm items-center gap-2">
+              <Input
+                placeholder="Your Steam ID or profile link"
+                value={steamInput}
+                maxLength={200}
+                onChange={(e) => setSteamInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && verify()}
+              />
+              <Button onClick={verify}>Verify</Button>
             </div>
-          </Card>
+          )}
+        </header>
 
-          <Card className="p-6 bg-gradient-to-br from-card to-muted border-primary/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Current Season</p>
-                <p className="text-xl font-bold text-primary">{SEASONS[selectedSeason].label}</p>
-              </div>
-              <Trophy className="h-8 w-8 text-primary/50" />
-            </div>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        {selectedPlayer && selectedH2H ? (
-          <div style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-            <PlayerDetail
-              player={selectedPlayer}
-              h2hStats={selectedH2H}
-              allPlayers={playerStats}
-              dateFrom={dateFrom}
-              dateTo={dateTo}
-              onDateFromChange={handleDateFromChange}
-              onDateToChange={handleDateToChange}
-              onBack={() => setSelectedPlayerId(null)}
-            />
-          </div>
+        {loading ? (
+          <p className="text-muted-foreground">Loading draft…</p>
         ) : (
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="overview">Player Overview</TabsTrigger>
-              <TabsTrigger value="matrix">Head-to-Head Matrix</TabsTrigger>
-            </TabsList>
+          <>
+            <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
+              <div>
+                {complete ? (
+                  <p className="text-lg font-semibold text-success">Draft complete — all 8 teams are set.</p>
+                ) : draft?.started ? (
+                  <p className="text-lg font-semibold">
+                    Pick {picks.length + 1} of {TOTAL_PICKS} ·{" "}
+                    <span className="text-primary">{currentCaptain?.name}</span> is on the clock
+                  </p>
+                ) : (
+                  <p className="text-lg font-semibold">
+                    Draft not started — the pick order will be randomised.
+                  </p>
+                )}
+                {!myCaptain && (
+                  <p className="text-sm text-muted-foreground">
+                    Verify your Steam ID above to pick. Anyone can watch.
+                  </p>
+                )}
+              </div>
 
-            <TabsContent value="overview" className="space-y-6" style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-              <StatsOverview 
-                playerStats={playerStats}
-                onPlayerSelect={setSelectedPlayerId}
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                onDateFromChange={handleDateFromChange}
-                onDateToChange={handleDateToChange}
-              />
-            </TabsContent>
+              <div className="flex gap-2">
+                {myCaptain && !draft?.started && (
+                  <Button disabled={busy} onClick={() => call("start")}>
+                    <Shuffle className="mr-2 h-4 w-4" />
+                    Randomise order & start
+                  </Button>
+                )}
+                {myCaptain && draft?.started && (
+                  <Button
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => {
+                      if (confirm("Reset the whole draft? All picks will be cleared.")) call("reset");
+                    }}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset draft
+                  </Button>
+                )}
+              </div>
+            </Card>
 
-            <TabsContent value="matrix" className="space-y-6" style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-              <HeadToHeadMatrix 
-                playerStats={playerStats}
-                h2hMatrix={h2hMatrix}
-                matches={data?.data || []}
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                onDateFromChange={handleDateFromChange}
-                onDateToChange={handleDateToChange}
-              />
-            </TabsContent>
-          </Tabs>
+            <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+              <section>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  {draft?.started ? "Pick order" : "Captains (order hidden until start)"}
+                </h2>
+                <CaptainBoard
+                  order={orderedCaptains}
+                  picks={picks}
+                  playerById={playerById}
+                  currentCaptainId={currentCaptain?.id}
+                  myCaptainId={myCaptainId ?? undefined}
+                />
+              </section>
+
+              <section>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Available players ({available.length})
+                </h2>
+                <Card className="p-3">
+                  <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      className="pl-9"
+                      placeholder="Search player"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                  </div>
+                  <ScrollArea className="h-[540px] pr-2">
+                    <ul className="space-y-1">
+                      {available.map((p) => (
+                        <li
+                          key={p.id}
+                          className="flex items-center justify-between gap-2 rounded border border-border/60 px-2 py-1.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{p.name}</p>
+                            <p className="truncate text-xs text-muted-foreground">{p.roles}</p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="text-sm font-semibold text-accent">{p.mmr}</span>
+                            {isMyTurn && (
+                              <Button size="sm" disabled={busy} onClick={() => call("pick", p.id)}>
+                                Pick
+                              </Button>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                      {available.length === 0 && (
+                        <li className="py-6 text-center text-sm text-muted-foreground">No players left</li>
+                      )}
+                    </ul>
+                  </ScrollArea>
+                </Card>
+              </section>
+            </div>
+          </>
         )}
       </div>
     </div>
