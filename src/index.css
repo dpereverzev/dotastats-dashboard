@@ -2,53 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Design system: dark "ember arena" draft theme. All colors MUST be HSL. */
 
 @layer base {
   :root {
-    --background: 220 18% 8%;
-    --foreground: 180 5% 95%;
+    --background: 20 20% 6%;
+    --foreground: 36 30% 94%;
 
-    --card: 220 16% 10%;
-    --card-foreground: 180 5% 95%;
+    --card: 20 18% 9%;
+    --card-foreground: 36 30% 94%;
 
-    --popover: 220 18% 12%;
-    --popover-foreground: 180 5% 95%;
+    --popover: 20 18% 11%;
+    --popover-foreground: 36 30% 94%;
 
-    --primary: 180 78% 48%;
-    --primary-foreground: 220 18% 8%;
+    --primary: 14 88% 54%;
+    --primary-foreground: 20 20% 6%;
 
-    --secondary: 220 14% 16%;
-    --secondary-foreground: 180 5% 95%;
+    --secondary: 20 14% 15%;
+    --secondary-foreground: 36 30% 94%;
 
-    --muted: 220 14% 14%;
-    --muted-foreground: 180 5% 60%;
+    --muted: 20 12% 13%;
+    --muted-foreground: 30 10% 62%;
 
-    --accent: 180 78% 48%;
-    --accent-foreground: 220 18% 8%;
+    --accent: 41 92% 58%;
+    --accent-foreground: 20 20% 6%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 180 5% 95%;
+    --destructive: 0 74% 52%;
+    --destructive-foreground: 36 30% 94%;
 
-    --success: 142 76% 36%;
-    --success-foreground: 180 5% 95%;
+    --success: 145 55% 42%;
+    --success-foreground: 20 20% 6%;
 
-    --border: 220 14% 20%;
-    --input: 220 14% 18%;
-    --ring: 180 78% 48%;
+    --border: 20 14% 19%;
+    --input: 20 14% 17%;
+    --ring: 14 88% 54%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --chart-1: 180 78% 48%;
-    --chart-2: 200 80% 50%;
-    --chart-3: 270 70% 60%;
-    --chart-4: 290 65% 55%;
-    --chart-5: 340 75% 55%;
-
-    --gradient-primary: linear-gradient(135deg, hsl(180 78% 48% / 0.2), hsl(200 80% 50% / 0.1));
-    --glow-primary: 0 0 30px hsl(180 78% 48% / 0.4);
+    --gradient-ember: linear-gradient(135deg, hsl(14 88% 54% / 0.25), hsl(41 92% 58% / 0.08));
+    --glow-ember: 0 0 28px hsl(14 88% 54% / 0.35);
   }
 }
 
@@ -59,5 +51,22 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Rajdhani", "Oswald", system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: 0.02em;
+  }
+}
+
+@layer utilities {
+  .ember-panel {
+    background-image: var(--gradient-ember);
+  }
+
+  .ember-glow {
+    box-shadow: var(--glow-ember);
   }
 }
