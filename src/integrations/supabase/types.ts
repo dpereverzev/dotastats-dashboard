@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      draft: {
+        Row: {
+          id: string
+          pick_order: string[]
+          started: boolean
+          started_at: string | null
+        }
+        Insert: {
+          id?: string
+          pick_order?: string[]
+          started?: boolean
+          started_at?: string | null
+        }
+        Update: {
+          id?: string
+          pick_order?: string[]
+          started?: boolean
+          started_at?: string | null
+        }
+        Relationships: []
+      }
+      picks: {
+        Row: {
+          captain_id: string
+          created_at: string
+          id: string
+          pick_number: number
+          player_id: string
+        }
+        Insert: {
+          captain_id: string
+          created_at?: string
+          id?: string
+          pick_number: number
+          player_id: string
+        }
+        Update: {
+          captain_id?: string
+          created_at?: string
+          id?: string
+          pick_number?: number
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "picks_captain_id_fkey"
+            columns: ["captain_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          created_at: string
+          id: string
+          is_captain: boolean
+          mmr: number
+          name: string
+          roles: string
+          steam_key: string
+          steam_raw: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_captain?: boolean
+          mmr: number
+          name: string
+          roles?: string
+          steam_key: string
+          steam_raw: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_captain?: boolean
+          mmr?: number
+          name?: string
+          roles?: string
+          steam_key?: string
+          steam_raw?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
