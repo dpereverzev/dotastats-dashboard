@@ -2,45 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design system: dark "ember arena" draft theme. All colors MUST be HSL. */
+/* Design system: editorial tailoring studio. All colors are semantic HSL tokens. */
 
 @layer base {
   :root {
-    --background: 20 20% 6%;
-    --foreground: 36 30% 94%;
-
-    --card: 20 18% 9%;
-    --card-foreground: 36 30% 94%;
-
-    --popover: 20 18% 11%;
-    --popover-foreground: 36 30% 94%;
-
-    --primary: 14 88% 54%;
-    --primary-foreground: 20 20% 6%;
-
-    --secondary: 20 14% 15%;
-    --secondary-foreground: 36 30% 94%;
-
-    --muted: 20 12% 13%;
-    --muted-foreground: 30 10% 62%;
-
-    --accent: 41 92% 58%;
-    --accent-foreground: 20 20% 6%;
+    --background: 36 20% 98%;
+    --foreground: 30 8% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 30 8% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 8% 13%;
+    --primary: 352 35% 28%;
+    --primary-foreground: 36 20% 98%;
+    --secondary: 35 13% 93%;
+    --secondary-foreground: 30 8% 20%;
+    --muted: 35 10% 94%;
+    --muted-foreground: 30 6% 46%;
+    --accent: 37 30% 88%;
+    --accent-foreground: 30 8% 18%;
 
     --destructive: 0 74% 52%;
-    --destructive-foreground: 36 30% 94%;
-
-    --success: 145 55% 42%;
-    --success-foreground: 20 20% 6%;
-
-    --border: 20 14% 19%;
-    --input: 20 14% 17%;
-    --ring: 14 88% 54%;
-
-    --radius: 0.5rem;
-
-    --gradient-ember: linear-gradient(135deg, hsl(14 88% 54% / 0.25), hsl(41 92% 58% / 0.08));
-    --glow-ember: 0 0 28px hsl(14 88% 54% / 0.35);
+    --destructive-foreground: 36 20% 98%;
+    --success: 145 35% 36%;
+    --success-foreground: 36 20% 98%;
+    --border: 32 10% 84%;
+    --input: 32 10% 84%;
+    --ring: 352 35% 28%;
+    --radius: 0.25rem;
   }
 }
 
@@ -51,22 +39,77 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Rajdhani", "Oswald", system-ui, sans-serif;
+    font-family: "Work Sans", system-ui, sans-serif;
   }
 
   h1,
   h2,
   h3 {
-    letter-spacing: 0.02em;
+    letter-spacing: 0;
   }
 }
 
-@layer utilities {
-  .ember-panel {
-    background-image: var(--gradient-ember);
-  }
+@layer components {
+  .font-display { font-family: "Cormorant Garamond", Georgia, serif; }
+  .eyebrow { @apply text-[10px] font-semibold uppercase text-muted-foreground; letter-spacing: .14em; }
+  .topbar { @apply flex h-16 items-center justify-between border-b border-border bg-card px-4 md:px-6; }
+  .brand { @apply text-sm font-semibold; letter-spacing: .12em; }
+  .stepbar { @apply flex h-14 items-stretch overflow-x-auto border-b border-border bg-card px-2 md:justify-center; }
+  .step-button { @apply h-full shrink-0 rounded-none border-b-2 border-transparent px-3 text-xs text-muted-foreground md:px-6; }
+  .step-button span { @apply mr-2 text-[10px] opacity-60; }
+  .step-button.active { @apply border-primary text-foreground; }
+  .config-grid { @apply grid min-h-[calc(100vh-7.5rem)] lg:grid-cols-[370px_1fr] xl:grid-cols-[390px_1fr_310px]; }
+  .options-panel { @apply relative border-r border-border bg-card lg:h-[calc(100vh-7.5rem)] lg:overflow-y-auto; }
+  .panel-heading { @apply sticky top-0 z-10 border-b border-border bg-card/95 px-5 py-5 backdrop-blur; }
+  .panel-nav { @apply fixed bottom-0 left-0 right-0 z-20 flex h-20 items-center gap-4 border-t border-border bg-card px-5 lg:absolute; }
+  .preview-stage { @apply relative flex min-h-[600px] items-center justify-center overflow-hidden bg-background px-4 pb-24 pt-10 lg:h-[calc(100vh-7.5rem)] lg:min-h-0 lg:pb-10; }
+  .preview-stage::before { content: ""; @apply absolute bottom-[8%] h-[12%] w-[60%] rounded-[50%] bg-secondary blur-3xl; }
+  .suit-image { @apply relative z-[1] h-full max-h-[calc(100vh-10rem)] w-full object-contain mix-blend-multiply transition-all duration-500; }
+  .preview-label { @apply absolute left-5 top-5 z-10 flex items-center gap-2 text-[10px] uppercase text-muted-foreground; letter-spacing: .12em; }
+  .preview-label svg { @apply h-3.5 w-3.5 text-primary; }
+  .preview-caption { @apply absolute bottom-6 left-6 z-10 flex items-center gap-3 border border-border bg-card/90 px-3 py-2 shadow-sm backdrop-blur; }
+  .preview-caption strong, .preview-caption small { @apply block; }
+  .preview-caption strong { @apply text-xs; }
+  .preview-caption small { @apply text-[10px] text-muted-foreground; }
+  .mini-swatch { @apply h-8 w-8 border border-border; }
+  .waistcoat-indicator { @apply absolute right-5 top-5 z-10 flex items-center gap-2 bg-primary px-3 py-2 text-xs text-primary-foreground shadow-sm; }
+  .waistcoat-indicator svg { @apply h-3.5 w-3.5; }
+  .summary-panel { @apply hidden border-l border-border bg-card p-7 xl:block; }
+  .summary-list { @apply divide-y divide-border border-y border-border; }
+  .summary-list div { @apply py-3; }
+  .summary-list span, .summary-list strong { @apply block; }
+  .summary-list span { @apply text-[10px] uppercase text-muted-foreground; letter-spacing: .1em; }
+  .summary-list strong { @apply mt-1 text-sm font-medium; }
+  .fabric-card { @apply h-auto flex-col items-start gap-2 whitespace-normal p-0 hover:bg-transparent; }
+  .fabric-card strong, .fabric-card small { @apply block; }
+  .fabric-card strong { @apply text-xs font-semibold; }
+  .fabric-card small { @apply text-[10px] font-normal text-muted-foreground; }
+  .fabric-swatch { @apply flex aspect-[4/3] w-full items-center justify-center border-2 border-transparent text-primary-foreground shadow-sm transition-all; }
+  .fabric-card.selected .fabric-swatch { @apply border-primary ring-2 ring-primary/10; }
+  .option-card { @apply relative h-28 flex-col gap-2 whitespace-normal px-2 text-center text-xs; }
+  .option-card.selected { @apply border-primary bg-accent text-foreground ring-1 ring-primary; }
+  .option-card small { @apply text-[10px] text-muted-foreground; }
+  .option-mark { @apply relative flex h-11 w-14 items-center justify-center border-b border-foreground/40; }
+  .option-mark > span { @apply h-8 w-8 rounded-t-full border-x border-t border-foreground/50; }
+  .option-mark small { @apply absolute bottom-1 text-[8px] uppercase; }
+  .option-buttons > span::after { content: "••"; @apply absolute left-0 right-0 top-3 text-[9px]; }
+  .option-lapel > span { @apply h-9 w-5 rotate-12 rounded-none border-b-0; }
+  .option-pocket > span { @apply h-4 w-9 rounded-none border; }
+  .fabric-navy { background: repeating-linear-gradient(120deg, hsl(220 42% 18%), hsl(220 42% 18%) 2px, hsl(220 38% 22%) 2px, hsl(220 38% 22%) 4px); }
+  .fabric-charcoal { background: repeating-linear-gradient(45deg, hsl(0 0% 24%), hsl(0 0% 24%) 2px, hsl(0 0% 31%) 2px, hsl(0 0% 31%) 3px); }
+  .fabric-ink { background: radial-gradient(hsl(214 42% 31%) 1px, hsl(216 43% 20%) 1px); background-size: 4px 4px; }
+  .fabric-green { background: repeating-linear-gradient(90deg, hsl(151 43% 17%), hsl(151 43% 17%) 3px, hsl(151 36% 23%) 4px); }
+  .fabric-brown { background: repeating-linear-gradient(135deg, hsl(25 35% 30%), hsl(25 35% 30%) 4px, hsl(25 28% 38%) 5px); }
+  .fabric-steel { background: linear-gradient(120deg, hsl(206 7% 35%), hsl(206 10% 52%), hsl(206 7% 35%)); }
+  .fabric-royal { background: repeating-linear-gradient(90deg, hsl(219 50% 22%), hsl(219 50% 22%) 2px, hsl(219 55% 30%) 3px); }
+  .fabric-moss { background: repeating-linear-gradient(45deg, hsl(75 25% 27%), hsl(75 25% 27%) 3px, hsl(75 20% 36%) 4px); }
+}
 
-  .ember-glow {
-    box-shadow: var(--glow-ember);
-  }
+@media (max-width: 1023px) {
+  .options-panel { @apply order-2 border-r-0; }
+  .preview-stage { @apply order-1 min-h-[520px] border-b border-border; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
