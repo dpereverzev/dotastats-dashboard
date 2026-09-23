@@ -1,285 +1,177 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "@/hooks/use-toast";
-import { CaptainBoard } from "@/components/CaptainBoard";
-import {
-  DraftState,
-  Pick,
-  Player,
-  TOTAL_PICKS,
-  captainIndexForPick,
-  normalizeSteam,
-} from "@/lib/draft";
-import { Search, Shuffle, ShieldCheck, LogOut, Swords, RotateCcw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Check, ChevronLeft, ChevronRight, Heart, Menu, RotateCcw, Search, ShoppingBag, SlidersHorizontal, Sparkles } from "lucide-react";
+import navySuit from "@/assets/suit-navy.jpg";
+import charcoalSuit from "@/assets/suit-charcoal.jpg";
+import greenSuit from "@/assets/suit-green.jpg";
+import brownSuit from "@/assets/suit-brown.jpg";
+import { defaultConfig, fabrics, optionPrice, steps, type StepId, type SuitConfig } from "@/lib/configurator";
+import { cn } from "@/lib/utils";
 
-const STORAGE_KEY = "mixcup-steam-id";
+const STORAGE_KEY = "atelier-suit-configuration";
+const suitImages = { navy: navySuit, charcoal: charcoalSuit, green: greenSuit, brown: brownSuit };
+
+const optionGroups: Record<Exclude<StepId, "fabric">, { title: string; key: keyof SuitConfig; options: string[] }[]> = {
+  jacket: [
+    { title: "Cut", key: "fit", options: ["Slim", "Tailored", "Classic"] },
+    { title: "Jacket style", key: "buttons", options: ["One button", "Two button", "Three button", "Double breasted"] },
+    { title: "Lapel", key: "lapel", options: ["Notch", "Peak", "Shawl"] },
+    { title: "Lapel width", key: "lapelWidth", options: ["Narrow", "Classic", "Wide"] },
+    { title: "Pockets", key: "pockets", options: ["Flap", "Jetted", "Patch", "Ticket pocket"] },
+    { title: "Back vents", key: "vents", options: ["No vent", "Single", "Double"] },
+  ],
+  trousers: [
+    { title: "Cut", key: "trouserFit", options: ["Slim", "Tailored", "Classic"] },
+    { title: "Front", key: "pleats", options: ["Flat front", "Single pleat", "Double pleat"] },
+    { title: "Hem", key: "cuffs", options: ["Plain hem", "Turn-up cuff"] },
+    { title: "Break", key: "break", options: ["No break", "Slight break", "Full break"] },
+  ],
+  waistcoat: [
+    { title: "Waistcoat", key: "waistcoat", options: ["No waistcoat", "Single-breasted", "Double-breasted"] },
+  ],
+  details: [
+    { title: "Jacket lining", key: "lining", options: ["Burgundy paisley", "Midnight satin", "Copper geometric", "Ivory twill"] },
+    { title: "Sleeve buttons", key: "workingCuffs", options: ["Standard cuffs", "Working buttonholes"] },
+  ],
+};
+
+const OptionMark = ({ label, type }: { label: string; type: string }) => (
+  <span className={cn("option-mark", type === "lapel" && "option-lapel", type === "pockets" && "option-pocket", type === "buttons" && "option-buttons") }>
+    <span />
+    <small>{label.split(" ")[0]}</small>
+  </span>
+);
 
 const Index = () => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [picks, setPicks] = useState<Pick[]>([]);
-  const [draft, setDraft] = useState<DraftState | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [steamInput, setSteamInput] = useState("");
-  const [myCaptainId, setMyCaptainId] = useState<string | null>(null);
-  const [mySteamId, setMySteamId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
+  const [step, setStep] = useState<StepId>("fabric");
   const [search, setSearch] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [category, setCategory] = useState("All fabrics");
+  const [saved, setSaved] = useState(false);
+  const [config, setConfig] = useState<SuitConfig>(() => {
+    try {
+      return { ...defaultConfig, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") };
+    } catch {
+      return defaultConfig;
+    }
+  });
 
-  const load = useCallback(async () => {
-    const [p, pk, d] = await Promise.all([
-      supabase.from("players").select("*").order("mmr", { ascending: false }),
-      supabase.from("picks").select("*").order("pick_number"),
-      supabase.from("draft").select("*").eq("id", "main").maybeSingle(),
-    ]);
-    if (p.data) setPlayers(p.data as Player[]);
-    if (pk.data) setPicks(pk.data as Pick[]);
-    if (d.data) setDraft(d.data as DraftState);
-    setLoading(false);
-  }, []);
+  useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(config)), [config]);
 
-  useEffect(() => {
-    load();
-    const channel = supabase
-      .channel("draft-room")
-      .on("postgres_changes", { event: "*", schema: "public", table: "picks" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "draft" }, () => load())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [load]);
+  const selectedFabric = fabrics.find((fabric) => fabric.id === config.fabric) ?? fabrics[0];
+  const stepIndex = steps.findIndex((item) => item.id === step);
+  const total = useMemo(() => {
+    const additions = Object.values(config).reduce((sum, value) => sum + (optionPrice[value] ?? 0), 0);
+    return 449 + selectedFabric.price + additions;
+  }, [config, selectedFabric]);
+  const visibleFabrics = fabrics.filter((fabric) => {
+    const matchesSearch = `${fabric.name} ${fabric.mill} ${fabric.color}`.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch && (category === "All fabrics" || fabric.category === category);
+  });
 
-  const playerById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
-  const captains = useMemo(() => players.filter((p) => p.is_captain), [players]);
-  const pickedIds = useMemo(() => new Set(picks.map((p) => p.player_id)), [picks]);
+  const update = (key: keyof SuitConfig, value: string) => setConfig((current) => ({ ...current, [key]: value }));
+  const move = (direction: number) => setStep(steps[Math.max(0, Math.min(steps.length - 1, stepIndex + direction))].id);
 
-  // Restore identity once players load
-  useEffect(() => {
-    if (!mySteamId || players.length === 0) return;
-    const key = normalizeSteam(mySteamId);
-    const me = players.find((p) => normalizeSteam(p.steam_raw) === key && p.is_captain);
-    setMyCaptainId(me ? me.id : null);
-  }, [mySteamId, players]);
-
-  const orderedCaptains = useMemo(() => {
-    if (!draft?.started || draft.pick_order.length === 0) return captains;
-    return draft.pick_order.map((id) => playerById.get(id)).filter(Boolean) as Player[];
-  }, [draft, captains, playerById]);
-
-  const currentCaptain = useMemo(() => {
-    if (!draft?.started || picks.length >= TOTAL_PICKS) return undefined;
-    const idx = captainIndexForPick(picks.length);
-    return playerById.get(draft.pick_order[idx]);
-  }, [draft, picks, playerById]);
-
-  const available = useMemo(
-    () =>
-      players
-        .filter((p) => !p.is_captain && !pickedIds.has(p.id))
-        .filter((p) => p.name.toLowerCase().includes(search.toLowerCase().trim())),
-    [players, pickedIds, search],
+  const ConfigurationSummary = () => (
+    <div className="space-y-5">
+      <div>
+        <p className="eyebrow">Your design</p>
+        <h2 className="mt-1 font-display text-3xl">The Signature Suit</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Hand-finished and made to your measurements.</p>
+      </div>
+      <div className="summary-list">
+        <div><span>Fabric</span><strong>{selectedFabric.name}</strong></div>
+        <div><span>Jacket</span><strong>{config.buttons}, {config.lapel.toLowerCase()} lapel</strong></div>
+        <div><span>Trousers</span><strong>{config.trouserFit}, {config.pleats.toLowerCase()}</strong></div>
+        <div><span>Waistcoat</span><strong>{config.waistcoat}</strong></div>
+      </div>
+      <div className="flex items-end justify-between border-t border-border pt-5">
+        <div><p className="text-xs uppercase text-muted-foreground">Made-to-measure total</p><p className="font-display text-4xl">€{total}</p></div>
+        <p className="text-right text-xs text-muted-foreground">VAT included<br/>Free delivery</p>
+      </div>
+      <Button className="h-12 w-full" onClick={() => setSaved(true)}>{saved ? <><Check /> Design saved</> : <><ShoppingBag /> Save configuration</>}</Button>
+      <p className="text-center text-xs text-muted-foreground">Your design is saved on this device.</p>
+    </div>
   );
 
-  const isMyTurn = !!currentCaptain && currentCaptain.id === myCaptainId;
-  const complete = draft?.started && picks.length >= TOTAL_PICKS;
-
-  const verify = () => {
-    const key = normalizeSteam(steamInput);
-    if (!key) return;
-    const me = players.find((p) => normalizeSteam(p.steam_raw) === key);
-    if (!me || !me.is_captain) {
-      toast({
-        title: "Not a captain",
-        description: "That Steam ID is not one of the 8 captains. Check it and try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-    localStorage.setItem(STORAGE_KEY, steamInput.trim());
-    setMySteamId(steamInput.trim());
-    setSteamInput("");
-    toast({ title: `Welcome, ${me.name}`, description: "You can pick when it is your turn." });
-  };
-
-  const signOut = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setMySteamId(null);
-    setMyCaptainId(null);
-  };
-
-  const call = async (action: "start" | "pick" | "reset", playerId?: string) => {
-    if (!mySteamId) return;
-    setBusy(true);
-    const { data, error } = await supabase.functions.invoke("draft-action", {
-      body: { action, steamId: mySteamId, playerId },
-    });
-    setBusy(false);
-    const message = (data as { error?: string } | null)?.error;
-    if (error || message) {
-      toast({
-        title: "Could not do that",
-        description: message ?? "Something went wrong, try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-    load();
-  };
-
-  const myCaptain = myCaptainId ? playerById.get(myCaptainId) : undefined;
-
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <Swords className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold sm:text-4xl">MixCup Draft</h1>
-            </div>
-            <p className="mt-1 text-muted-foreground">
-              8 captains, snake order, 4 picks each — live for everyone.
-            </p>
+    <main className="min-h-screen bg-background text-foreground">
+      <header className="topbar">
+        <div className="flex items-center gap-3"><Menu className="h-5 w-5"/><span className="brand">ATELIER / FORM</span></div>
+        <p className="hidden text-xs uppercase text-muted-foreground md:block">Made-to-measure · Crafted for you</p>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" aria-label="Reset design" title="Reset design" onClick={() => setConfig(defaultConfig)}><RotateCcw /></Button>
+          <Button variant="ghost" size="icon" aria-label="Save favorite" title="Save favorite" onClick={() => setSaved((value) => !value)}><Heart className={saved ? "fill-primary text-primary" : ""}/></Button>
+          <Sheet><SheetTrigger asChild><Button variant="ghost" size="icon" className="xl:hidden" aria-label="View order summary"><ShoppingBag /></Button></SheetTrigger><SheetContent><SheetHeader><SheetTitle className="sr-only">Order summary</SheetTitle></SheetHeader><div className="mt-8"><ConfigurationSummary /></div></SheetContent></Sheet>
+        </div>
+      </header>
+
+      <nav className="stepbar" aria-label="Suit configuration steps">
+        {steps.map((item, index) => (
+          <Button key={item.id} variant="ghost" onClick={() => setStep(item.id)} className={cn("step-button", step === item.id && "active")}>
+            <span>{String(index + 1).padStart(2, "0")}</span>{item.short}
+          </Button>
+        ))}
+      </nav>
+
+      <div className="config-grid">
+        <aside className="options-panel">
+          <div className="panel-heading">
+            <p className="eyebrow">Step {stepIndex + 1} of {steps.length}</p>
+            <h1 className="font-display text-3xl">{steps[stepIndex].label}</h1>
           </div>
 
-          {myCaptain ? (
-            <div className="flex items-center gap-2">
-              <Badge className="gap-1.5 py-1.5">
-                <ShieldCheck className="h-4 w-4" />
-                {myCaptain.name}
-              </Badge>
-              <Button variant="ghost" size="sm" onClick={signOut}>
-                <LogOut className="mr-1.5 h-4 w-4" />
-                Sign out
-              </Button>
+          {step === "fabric" ? (
+            <div className="px-5 pb-28 pt-5">
+              <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/><Input className="pl-9" placeholder="Search by color, weave or mill" value={search} onChange={(event) => setSearch(event.target.value)}/></div>
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
+                {["All fabrics", "Essential", "Performance", "Premium"].map((item) => <Button key={item} variant={category === item ? "default" : "outline"} size="sm" onClick={() => setCategory(item)}>{item}</Button>)}
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-5">
+                {visibleFabrics.map((fabric) => (
+                  <Button key={fabric.id} variant="ghost" className={cn("fabric-card", config.fabric === fabric.id && "selected")} onClick={() => update("fabric", fabric.id)}>
+                    <span className={cn("fabric-swatch", fabric.texture)}>{config.fabric === fabric.id && <Check className="h-5 w-5"/>}</span>
+                    <span className="w-full text-left"><strong>{fabric.name}</strong><small>{fabric.mill} · {fabric.category}</small><small>{fabric.price ? `+€${fabric.price}` : "Included"}</small></span>
+                  </Button>
+                ))}
+              </div>
             </div>
           ) : (
-            <div className="flex w-full max-w-sm items-center gap-2">
-              <Input
-                placeholder="Your Steam ID or profile link"
-                value={steamInput}
-                maxLength={200}
-                onChange={(e) => setSteamInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && verify()}
-              />
-              <Button onClick={verify}>Verify</Button>
+            <div className="space-y-8 px-5 pb-28 pt-6">
+              {optionGroups[step].map((group) => (
+                <fieldset key={group.key}>
+                  <legend className="mb-3 text-sm font-semibold">{group.title}</legend>
+                  <div className="grid grid-cols-2 gap-2">
+                    {group.options.map((option) => (
+                      <Button key={option} variant="outline" className={cn("option-card", config[group.key] === option && "selected")} onClick={() => update(group.key, option)}>
+                        <OptionMark label={option} type={group.key}/><span>{option}</span>{optionPrice[option] ? <small>+€{optionPrice[option]}</small> : null}
+                      </Button>
+                    ))}
+                  </div>
+                </fieldset>
+              ))}
+              {step === "details" && <div><label htmlFor="monogram" className="mb-2 block text-sm font-semibold">Inside monogram <span className="font-normal text-muted-foreground">(+€12)</span></label><Input id="monogram" maxLength={20} placeholder="Your initials or name" value={config.monogram} onChange={(event) => update("monogram", event.target.value)}/></div>}
             </div>
           )}
-        </header>
 
-        {loading ? (
-          <p className="text-muted-foreground">Loading draft…</p>
-        ) : (
-          <>
-            <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
-              <div>
-                {complete ? (
-                  <p className="text-lg font-semibold text-success">Draft complete — all 8 teams are set.</p>
-                ) : draft?.started ? (
-                  <p className="text-lg font-semibold">
-                    Pick {picks.length + 1} of {TOTAL_PICKS} ·{" "}
-                    <span className="text-primary">{currentCaptain?.name}</span> is on the clock
-                  </p>
-                ) : (
-                  <p className="text-lg font-semibold">
-                    Draft not started — the pick order will be randomised.
-                  </p>
-                )}
-                {!myCaptain && (
-                  <p className="text-sm text-muted-foreground">
-                    Verify your Steam ID above to pick. Anyone can watch.
-                  </p>
-                )}
-              </div>
+          <div className="panel-nav">
+            <Button variant="outline" size="icon" onClick={() => move(-1)} disabled={stepIndex === 0} aria-label="Previous step"><ChevronLeft /></Button>
+            <div className="h-1 flex-1 overflow-hidden bg-secondary"><div className="h-full bg-primary transition-all" style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}/></div>
+            <Button onClick={() => stepIndex === steps.length - 1 ? setSaved(true) : move(1)}>{stepIndex === steps.length - 1 ? "Finish design" : "Next"}<ChevronRight /></Button>
+          </div>
+        </aside>
 
-              <div className="flex gap-2">
-                {myCaptain && !draft?.started && (
-                  <Button disabled={busy} onClick={() => call("start")}>
-                    <Shuffle className="mr-2 h-4 w-4" />
-                    Randomise order & start
-                  </Button>
-                )}
-                {myCaptain && draft?.started && (
-                  <Button
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => {
-                      if (confirm("Reset the whole draft? All picks will be cleared.")) call("reset");
-                    }}
-                  >
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset draft
-                  </Button>
-                )}
-              </div>
-            </Card>
+        <section className="preview-stage">
+          <div className="preview-label"><Sparkles/><span>Live preview</span></div>
+          <img key={selectedFabric.image} src={suitImages[selectedFabric.image]} alt={`${selectedFabric.color} custom two-piece suit`} width={1024} height={1280} className="suit-image"/>
+          {config.waistcoat !== "No waistcoat" && <div className="waistcoat-indicator"><Check/> {config.waistcoat} waistcoat included</div>}
+          <div className="preview-caption"><span className={cn("mini-swatch", selectedFabric.texture)}/><div><strong>{selectedFabric.name}</strong><small>{selectedFabric.color} · 100% wool</small></div></div>
+        </section>
 
-            <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-              <section>
-                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  {draft?.started ? "Pick order" : "Captains (order hidden until start)"}
-                </h2>
-                <CaptainBoard
-                  order={orderedCaptains}
-                  picks={picks}
-                  playerById={playerById}
-                  currentCaptainId={currentCaptain?.id}
-                  myCaptainId={myCaptainId ?? undefined}
-                />
-              </section>
-
-              <section>
-                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Available players ({available.length})
-                </h2>
-                <Card className="p-3">
-                  <div className="relative mb-2">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      className="pl-9"
-                      placeholder="Search player"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  </div>
-                  <ScrollArea className="h-[540px] pr-2">
-                    <ul className="space-y-1">
-                      {available.map((p) => (
-                        <li
-                          key={p.id}
-                          className="flex items-center justify-between gap-2 rounded border border-border/60 px-2 py-1.5"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">{p.name}</p>
-                            <p className="truncate text-xs text-muted-foreground">{p.roles}</p>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <span className="text-sm font-semibold text-accent">{p.mmr}</span>
-                            {isMyTurn && (
-                              <Button size="sm" disabled={busy} onClick={() => call("pick", p.id)}>
-                                Pick
-                              </Button>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                      {available.length === 0 && (
-                        <li className="py-6 text-center text-sm text-muted-foreground">No players left</li>
-                      )}
-                    </ul>
-                  </ScrollArea>
-                </Card>
-              </section>
-            </div>
-          </>
-        )}
+        <aside className="summary-panel"><ConfigurationSummary /></aside>
       </div>
-    </div>
+    </main>
   );
 };
 
